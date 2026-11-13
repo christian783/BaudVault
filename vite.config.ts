@@ -11,9 +11,30 @@ export default defineConfig({
     modulePreload: { polyfill: false },
   },
   test: {
-    include: ['src/**/*.{test,spec}.ts', 'src/**/*.{test,spec}.tsx'],
     environment: 'node',
     // Engine tickets (BV-04 to BV-07) add the first real suites.
     passWithNoTests: true,
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'unit',
+          include: ['src/**/*.{test,spec}.ts', 'src/**/*.{test,spec}.tsx', 'test/**/*.test.ts'],
+          exclude: ['src/**/*.bench.test.ts'],
+          sequence: { groupOrder: 0 },
+        },
+      },
+      {
+        // Speed tests measure wall time, so they run alone after the unit
+        // project finishes and never compete with other files for the CPU.
+        extends: true,
+        test: {
+          name: 'bench',
+          include: ['src/**/*.bench.test.ts'],
+          fileParallelism: false,
+          sequence: { groupOrder: 1 },
+        },
+      },
+    ],
   },
 })

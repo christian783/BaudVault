@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Air-Gap Guard",
+      "trigger": "PreToolUse",
+      "description": "Before a file-writing tool runs, block it (exit 2) when it would write a forbidden network API word (fetch, XMLHttpRequest, WebSocket, EventSource, sendBeacon, RTCPeerConnection) into a file under src/ (Requirement 8.1).",
+      "matcher": "^(fs_write|fs_append|str_replace|fsWrite|fsAppend|strReplace|write|create_file|edit_file|semantic_rename)$",
+      "action": {
+        "type": "command",
+        "command": "node scripts/airgap-hook.mjs",
+        "timeout": 30
+      }
+    }
+  ]
+}

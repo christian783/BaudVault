@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Air-Gap Save Check",
+      "trigger": "PostFileSave",
+      "description": "After a file under src/ is saved, run the air-gap source scan (npm run airgap) and report any forbidden network identifiers (Requirement 8.1).",
+      "matcher": "(^|[\\\\/])src[\\\\/]",
+      "action": {
+        "type": "agent",
+        "prompt": "A file under src/ was just saved. Run `npm run airgap` from the repository root to scan src/ for the forbidden network identifiers (fetch, XMLHttpRequest, WebSocket, EventSource, sendBeacon, RTCPeerConnection). If the scan passes, reply with one line saying the air-gap check passed. If it fails, list each violation as `file:line` followed by the forbidden word that matched, and suggest renaming or removing it (for example `loadSamples` instead of `fetchSamples`). Do not print the content of the offending lines or any other file content, because files under src/ can hold Plaintext, Passwords, or key material. Do not change any files unless the user asks you to."
+      }
+    }
+  ]
+}

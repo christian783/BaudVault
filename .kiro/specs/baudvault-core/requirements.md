@@ -46,12 +46,13 @@ Scope: this spec covers the core BaudVault web application. The Tape Librarian K
 
 1. WHEN the user seals a Plaintext of 1 to 15,360 bytes with a non-empty Password, THE Vault_Engine SHALL compress the Plaintext with Deflate, derive a 256-bit key with PBKDF2-HMAC-SHA-256 using 600,000 iterations and a new 16-byte random salt, encrypt the compressed bytes with AES-256-GCM using a new 12-byte random IV, and return an Envelope in the v1 layout.
 2. WHEN the user opens an Envelope with the Password it was sealed with, THE Vault_Engine SHALL return a Plaintext identical byte for byte to the sealed Plaintext.
-3. IF the Password differs from the sealing Password, or the Envelope differs from the sealed Envelope in any way not covered by criterion 4, THEN THE Vault_Engine SHALL reject the Envelope with an AuthenticationError and return no Plaintext bytes.
+3. IF the Password contains no U+0000 character and either differs from the sealing Password or the Envelope differs from the sealed Envelope in any way not covered by criterion 4, THEN THE Vault_Engine SHALL reject the Envelope with an AuthenticationError and return no Plaintext bytes.
 4. IF any Envelope given to the Vault_Engine is shorter than 50 bytes, declares a version other than 1, or declares an iteration count outside 1,000 to 5,000,000, THEN THE Vault_Engine SHALL reject it with a FormatError without deriving a key, regardless of which operation or caller supplied the Envelope.
-5. IF the user requests sealing with an empty Plaintext, a Plaintext longer than 15,360 bytes, or an empty Password, THEN THE Vault_Engine SHALL reject the request with an InputError.
+5. IF the user requests sealing with an empty Plaintext, a Plaintext longer than 15,360 bytes, an empty Password, or a Password containing the character U+0000, THEN THE Vault_Engine SHALL reject the request with an InputError without deriving a key.
 6. THE Vault_Engine SHALL normalize every Password to Unicode NFC and encode it as UTF-8 before key derivation.
 7. IF an authenticated Envelope decompresses to more than 15,360 bytes, THEN THE Vault_Engine SHALL stop decompressing and reject the Envelope with a FormatError.
 8. IF an authenticated Envelope's decrypted bytes are not a valid Deflate stream, THEN THE Vault_Engine SHALL reject the Envelope with a FormatError and return no Plaintext bytes.
+9. IF the user opens an Envelope that passes the checks in criterion 4 with a Password containing the character U+0000, THEN THE Vault_Engine SHALL reject the request with an InputError without deriving a key.
 
 ### Requirement 2: Shamir Secret Sharing
 

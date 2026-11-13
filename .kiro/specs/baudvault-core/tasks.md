@@ -16,85 +16,85 @@ The plan follows the four waves in `tickets&specs.md`. Each top-level task is on
   - `.kiro/steering/kcs-audio.md` and `.kiro/steering/air-gap.md`
   - _Wave 1, no dependencies_
 
-- [ ] 3. BV-03 Air-gap scanner, hooks, and DSP Auditor agent
+- [x] 3. BV-03 Air-gap scanner, hooks, and DSP Auditor agent
   - _Wave 1, depends on 2_
-  - [ ] 3.1 Write `scripts/airgap-scan.mjs` with a shared word list
+  - [x] 3.1 Write `scripts/airgap-scan.mjs` with a shared word list
     - Default mode: plain-text scan of every file under `src/`
     - `--dist` mode: scan `dist/**/*.js` except the service worker, using the call patterns in `design.md`
     - Exit 1 and print `file:line` for each match
     - Add `npm run airgap` and `npm run airgap:dist`; run `airgap` before Vitest in `npm test` and `airgap:dist` after `vite build` in `npm run build`
     - _Requirements: 8.1, 8.7_
-  - [ ] 3.2 Write `test/airgap-scan.test.ts`
+  - [x] 3.2 Write `test/airgap-scan.test.ts`
     - Cover pass and fail cases for both modes using temporary directories
     - Add `test/**/*.test.ts` to Vitest `test.include` in `vite.config.ts`
     - _Requirements: 8.1, 8.7_
-  - [ ] 3.3 Write `scripts/airgap-hook.mjs` and create the pre-write hook
+  - [x] 3.3 Write `scripts/airgap-hook.mjs` and create the pre-write hook
     - Read the pending tool input JSON from stdin; exit 2 with a stderr message when a write under `src/` contains a forbidden word
     - Create the `PreToolUse` command hook for file-writing tools with Kiro's hook tool, not by hand
     - _Requirements: 8.1_
-  - [ ] 3.4 Create the save-check hook
+  - [x] 3.4 Create the save-check hook
     - Create the `PostFileSave` agent hook for `src/` paths with Kiro's hook tool; it tells the agent to run `npm run airgap` and report violations
     - _Requirements: 8.1_
-  - [ ] 3.5 Create `.kiro/agents/dsp-auditor.json` with `.kiro/steering/**/*.md` and the spec files as resources
+  - [x] 3.5 Create `.kiro/agents/dsp-auditor.json` with `.kiro/steering/**/*.md` and the spec files as resources
 
-- [ ] 4. BV-04 Vault engine: compression and AES-256-GCM
+- [x] 4. BV-04 Vault engine: compression and AES-256-GCM
   - _Wave 2, depends on 1, 2_
-  - [ ] 4.1 Create `src/core/errors.ts` and `src/core/bytes.ts`
+  - [x] 4.1 Create `src/core/errors.ts` and `src/core/bytes.ts`
     - Error classes take fixed messages and safe numbers only
     - _Requirements: 1.3, 1.4, 1.5, 8.9_
-  - [ ] 4.2 Implement `src/crypto/compress.ts`
+  - [x] 4.2 Implement `src/crypto/compress.ts`
     - Deflate compress; decompress capped at 15,360 bytes; malformed Deflate becomes `FormatError`
     - _Requirements: 1.1, 1.7, 1.8_
-  - [ ] 4.3 Implement `seal` and `open` in `src/crypto/vault.ts`
+  - [x] 4.3 Implement `seal` and `open` in `src/crypto/vault.ts`
     - Envelope v1 layout, header as AAD, NFC Password normalization, 600,000 PBKDF2 iterations
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 8.5_
-  - [ ] 4.4 Write unit tests for the vault engine
+  - [x] 4.4 Write unit tests for the vault engine
     - Production iteration count 600,000, 15,360-byte input limit, size and version errors, decompression cap, malformed Deflate after authentication
     - _Requirements: 1.1, 1.4, 1.5, 1.7, 1.8_
-  - [ ] 4.5 Write property test for seal and open round trip
+  - [x] 4.5 Write property test for seal and open round trip
     - **Property 1: Seal and open round trip**
     - **Validates: Requirements 1.1, 1.2, 1.6**
-  - [ ] 4.6 Write property test for authentication
+  - [x] 4.6 Write property test for authentication
     - **Property 2: Authentication rejects every change**
     - **Validates: Requirements 1.3, 1.4**
 
-- [ ] 5. BV-05 GF(256), Shamir Secret Sharing, Reed-Solomon (255, 223), and framer
+- [x] 5. BV-05 GF(256), Shamir Secret Sharing, Reed-Solomon (255, 223), and framer
   - _Wave 2, depends on 1, 2_
-  - [ ] 5.1 Implement `src/gf256/gf256.ts` (0x11D, α = 0x02, exp/log tables)
+  - [x] 5.1 Implement `src/gf256/gf256.ts` (0x11D, α = 0x02, exp/log tables)
     - _Requirements: 2.1, 3.2_
-  - [ ] 5.2 Implement `src/shamir/shamir.ts`
+  - [x] 5.2 Implement `src/shamir/shamir.ts`
     - Shard v1 layout validation (`FormatError`) and set checks (`ShardError`)
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 8.5_
-  - [ ] 5.3 Implement `src/fec/reed-solomon.ts` and `src/fec/crc.ts`
+  - [x] 5.3 Implement `src/fec/reed-solomon.ts` and `src/fec/crc.ts`
     - _Requirements: 3.2, 3.3, 3.4_
-  - [ ] 5.4 Implement `src/tape/framer.ts`
+  - [x] 5.4 Implement `src/tape/framer.ts`
     - Header_Frame, padding, Interleave_Groups, `frame`, `parseHeaderFrame`, `unframe`; `unframe` reports every uncorrectable block
     - _Requirements: 3.1, 3.4, 3.5, 3.6, 3.7, 3.8_
-  - [ ] 5.5 Write unit tests for GF(256), CRC, Reed-Solomon, framer, and Shamir
+  - [x] 5.5 Write unit tests for GF(256), CRC, Reed-Solomon, framer, and Shamir
     - GF identities, CRC check values, 16 errors corrected and 17 rejected, header copy fallback, CRC integrity failure, empty and oversize Body, mismatched and duplicate Shards, bad split arguments, malformed Shard
     - _Requirements: 2.4, 2.5, 2.6, 3.3, 3.4, 3.6, 3.7, 3.8_
-  - [ ] 5.6 Write property test for Shamir threshold reconstruction
+  - [x] 5.6 Write property test for Shamir threshold reconstruction
     - **Property 3: Shamir threshold reconstruction**
     - **Validates: Requirements 2.1, 2.2, 2.3**
-  - [ ] 5.7 Write property test for Reed-Solomon repair
+  - [x] 5.7 Write property test for Reed-Solomon repair
     - **Property 4: Reed-Solomon repairs bounded damage**
     - **Validates: Requirements 3.1, 3.2, 3.3, 3.5, 3.6**
 
-- [ ] 6. BV-06 Kansas City Standard modulator and Goertzel demodulator
+- [x] 6. BV-06 Kansas City Standard modulator and Goertzel demodulator
   - _Wave 2, depends on 1, 2; task 6.4 also depends on 5.4_
-  - [ ] 6.1 Implement `src/modem/kcs-modulator.ts`
+  - [x] 6.1 Implement `src/modem/kcs-modulator.ts`
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
-  - [ ] 6.2 Implement `src/modem/wav.ts`
+  - [x] 6.2 Implement `src/modem/wav.ts`
     - _Requirements: 4.6, 5.4, 5.5_
-  - [ ] 6.3 Implement `src/modem/goertzel.ts` and `src/modem/bit-demodulator.ts`
+  - [x] 6.3 Implement `src/modem/goertzel.ts` and `src/modem/bit-demodulator.ts`
     - _Requirements: 5.2, 5.7_
-  - [ ] 6.4 Implement `src/tape/tape-decoder.ts`
+  - [x] 6.4 Implement `src/tape/tape-decoder.ts`
     - Auto baud detection, progress events, decodes every group after a failure, silent release when both headers are unusable, error with partial stats on signal loss
     - _Requirements: 3.4, 3.6, 3.7, 3.9, 5.1, 5.3, 5.9_
-  - [ ] 6.5 Write unit tests for the modulator, WAV codec, and Tape_Decoder
+  - [x] 6.5 Write unit tests for the modulator, WAV codec, and Tape_Decoder
     - Modulated length at 2,400 baud, WAV header bytes, 8-bit, 24-bit, float, stereo, and WAVE_FORMAT_EXTENSIBLE parsing, auto baud detection, truncated record, both header copies unusable
     - _Requirements: 3.9, 4.4, 4.6, 5.3, 5.4, 5.5, 5.9_
-  - [ ] 6.6 Write a benchmark test for the demodulator
+  - [x] 6.6 Write a benchmark test for the demodulator
     - Show that the 300-baud demodulator processes audio at least 200 times faster than real time
     - _Requirements: 5.2_
 

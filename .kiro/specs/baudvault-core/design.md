@@ -120,7 +120,7 @@ export function open(envelope: Uint8Array, password: string): Promise<Uint8Array
 ```
 
 Seal steps:
-1. Validate: `1 ≤ plaintext.length ≤ 15,360`, `password.length > 0`, iterations within `[1,000, 5,000,000]`; otherwise `InputError`.
+1. Validate: `1 ≤ plaintext.length ≤ 15,360`, `password.length > 0`, the Password contains no U+0000, iterations within `[1,000, 5,000,000]`; otherwise `InputError`.
 2. Compress with `new CompressionStream('deflate')` (zlib format, RFC 1950).
 3. Encode the password as UTF-8 of `password.normalize('NFC')`.
 4. Draw a 16-byte salt and 12-byte IV from `crypto.getRandomValues`.
@@ -130,8 +130,11 @@ Seal steps:
 
 Open steps:
 1. If `envelope.length < 50`, version ≠ 1, or iterations outside `[1,000, 5,000,000]`, throw `FormatError` before deriving any key.
-2. Derive the key as in seal and decrypt. Any `OperationError` from Web Crypto becomes `AuthenticationError`.
-3. Decompress with `DecompressionStream('deflate')`, reading chunk by chunk. If the running total exceeds 15,360 bytes, cancel the stream and throw `FormatError`. A malformed Deflate stream also becomes `FormatError`.
+2. If the Password contains U+0000, throw `InputError` before deriving any key. This check runs after step 1, so a malformed Envelope always gets `FormatError` whatever Password the caller passes (Requirement 1.4).
+3. Derive the key as in seal and decrypt. Any `OperationError` from Web Crypto becomes `AuthenticationError`.
+4. Decompress with `DecompressionStream('deflate')`, reading chunk by chunk. If the running total exceeds 15,360 bytes, cancel the stream and throw `FormatError`. A malformed Deflate stream also becomes `FormatError`.
+
+**Why U+0000 is rejected.** PBKDF2 uses the Password bytes as an HMAC key, and HMAC zero-pads any key shorter than 64 bytes. So `"a"` and `"a\u0000"` derive the same AES key, and a Password that differs only by trailing U+0000 characters would open the Envelope. Rejecting U+0000 in both `seal` and `open` makes every accepted Password map to a distinct key input. No real Password typed on a keyboard contains U+0000.
 
 ### GF(256) (`src/gf256/gf256.ts`)
 
@@ -214,11 +217,11 @@ export function decodeWav(file: Uint8Array): { samples: Float32Array; sampleRate
 
 ### Goertzel and bit demodulator (`src/modem/goertzel.ts`, `src/modem/bit-demodulator.ts`)
 
-**Sliding Goertzel.** For each input sample, two sliding single-bin DFTs measure the energy of the last `W = round(sampleRate / baud)` samples at 1,200 Hz and at 2,400 Hz. The recursive form is `X ← (X + x[n] − x[n − W]) · e^{jω}` in float64. To bound rounding drift, both sums are recomputed directly from the window every 4,096 samples.
+**Sliding Goertzel.** For each input sample, two sliding single-bin DFTs measure the energy of the last `W = round(sampleRate / baud)` samples at 1,200 Hz and at 2,400 Hz. The recursive form is `X ← (X + x[n] − e^{jωW} · x[n − W]) · e^{jω}` in float64, which keeps `X = Σ_{k=0}^{W−1} x[n − k] · e^{jω(k+1)}`. The factor `e^{jωW}` equals 1 only when the window holds a whole number of cycles (300 baud at 44.1 kHz). At 2,400 baud the window holds 0.49 cycles of 1,200 Hz and 0.98 of 2,400 Hz, so leaving it out corrupts both sums. To bound rounding drift, both sums are recomputed directly from the window every 4,096 samples.
 
 **Decision signal.** `d[n] = (E₂₄₀₀ − E₁₂₀₀) / (E₂₄₀₀ + E₁₂₀₀ + ε)` lies in [−1, 1]. Positive means mark (1), negative means space (0). `d` is also trace B on the oscilloscope. `ε` equals the energy of a −50 dBFS tone over one window, so silence reads as 0.
 
-**Carrier_Lock.** Lock starts when `d > 0.5` and total energy is above the −40 dBFS floor for 0.5 seconds without a break. Lock is lost when total energy stays below the floor for 22 bit periods (2 frames), or when the Tape_Decoder releases it.
+**Carrier_Lock.** Lock starts when `d` is above the lock threshold and total energy is above the −40 dBFS floor for 0.5 seconds without a break. The lock threshold is 0.5 at 300 baud and 0 at 2,400 baud. At 2,400 baud the one-bit window holds only half a cycle of 1,200 Hz, so `d` during a clean mark leader swings between about 0.16 and 0.68 (minimum 0.151 at 22.05 kHz, 0.161 at 44.1 kHz, 0.168 at 48 kHz; measured in task 6.3), and `d > 0.5` would never hold for 0.5 seconds. At 300 baud a clean leader reads `d` ≈ 1.000. Lock is lost when total energy stays below the floor for 22 bit periods (2 frames), or when the Tape_Decoder releases it.
 
 **Start-bit search.** After lock, the decoder looks for a mark-to-space crossing of `d`. Because the window is one bit long, the crossing lags the true edge by about half a bit, so the estimated edge is `t_edge = t_cross − W / 2`. The candidate is accepted only if `d < 0` at `t_edge + 1.0 · T` (the end of the start bit's window, where `T` is the current bit period estimate). This rejects noise spikes during the leader.
 
@@ -324,7 +327,8 @@ The seeded PRNG is used only for the simulation. It is never used for security v
 - The UI counts code points with `[...password.normalize('NFC')].length`.
 - Under 12 code points, it shows: "A short password can be guessed offline by anyone who records the tape."
 - The UI never disables Lock because of Password length. An empty Password still disables Lock, because the Vault_Engine rejects it with `InputError`.
-- This rule lives in the UI only. The Vault_Engine accepts any non-empty Password.
+- This rule lives in the UI only. The Vault_Engine accepts any non-empty Password without U+0000.
+- A Password containing U+0000 (possible only by pasting) disables Lock and Unlock and shows the `InputError` message, because the Vault_Engine rejects it (Requirements 1.5, 1.9).
 
 #### Busy state (Requirement 7.27)
 
@@ -518,7 +522,7 @@ sequenceDiagram
 ```mermaid
 stateDiagram-v2
   [*] --> SearchCarrier
-  SearchCarrier --> Leader: d > 0.5 above floor
+  SearchCarrier --> Leader: d above lock threshold, above floor
   Leader --> SearchCarrier: break before 0.5 s
   Leader --> ReadHeader: 0.5 s of mark, start edge found
   ReadHeader --> SearchCarrier: both copies unusable
@@ -535,13 +539,13 @@ Each property is implemented as one fast-check suite in `src/properties/` with 2
 
 ### Property 1: Seal and open round trip
 
-*For any* Plaintext of 1 to 15,360 bytes and *any* non-empty Password, opening the sealed Envelope with the same Password returns the original Plaintext, and opening it with the NFD-normalized form of the Password returns the same result.
+*For any* Plaintext of 1 to 15,360 bytes and *any* non-empty Password without U+0000, opening the sealed Envelope with the same Password returns the original Plaintext, and opening it with the NFD-normalized form of the Password returns the same result.
 
 **Validates: Requirements 1.1, 1.2, 1.6**
 
 ### Property 2: Authentication rejects every change
 
-*For any* sealed Envelope, opening with *any* different Password (after NFC normalization) throws `AuthenticationError`. Flipping *any* single bit of the Envelope makes `open` throw `FormatError` if the flip lands in the version byte or moves the iteration count outside 1,000 to 5,000,000, and `AuthenticationError` otherwise. No case returns Plaintext.
+*For any* sealed Envelope, opening with *any* different Password without U+0000 (different after NFC normalization) throws `AuthenticationError`. Flipping *any* single bit of the Envelope makes `open` throw `FormatError` if the flip lands in the version byte or moves the iteration count outside 1,000 to 5,000,000, and `AuthenticationError` otherwise. No case returns Plaintext.
 
 **Validates: Requirements 1.3, 1.4**
 
@@ -574,6 +578,7 @@ Each property is implemented as one fast-check suite in `src/properties/` with 2
 | Decompressed output over 15,360 bytes | Stop reading, `FormatError` |
 | Decrypted bytes are not a valid Deflate stream (after authentication) | `FormatError`, no Plaintext returned (Requirement 1.8) |
 | Plaintext empty or over 15,360 bytes, empty Password | `InputError`; UI shows the size limit and disables Lock |
+| Password contains U+0000, in seal or open | `InputError` before any key derivation; in open, only after the Envelope format checks pass (Requirements 1.5, 1.9) |
 | Password shorter than 12 code points after NFC | Warning only; Lock stays enabled (Requirements 7.25, 7.26) |
 | Codeword with more than 16 errors | `UncorrectableError` with block indices; UI shows which blocks failed and suggests replaying with less noise |
 | Both Header_Frame copies unusable | Decoder silently returns to carrier search; UI LOCK lamp turns off |
@@ -660,6 +665,7 @@ The offline service worker is generated into `dist/` by the build plugin, not wr
   - decompression cap: an authenticated Envelope whose Deflate stream expands past 15,360 bytes throws `FormatError` (1.7);
   - invalid Deflate after authentication: an Envelope sealed around bytes that are not Deflate throws `FormatError` (1.8);
   - mismatched set ID, K, N, or length, and duplicate indices, throw `ShardError` (2.4);
+  - a Password containing U+0000 throws `InputError` from `seal` and, without deriving a key, from `open` (1.5, 1.9);
   - bad split arguments (K < 2, N < K, N > 16) throw `InputError` (2.5);
   - a malformed Shard (wrong version, K or N out of range, index out of range, no data bytes) throws `FormatError` (2.6);
   - a Body whose CRC-32 does not match the Header_Frame throws `IntegrityError` (3.7);
@@ -674,7 +680,7 @@ The offline service worker is generated into `dist/` by the build plugin, not wr
   - P5 picks one of three channel cases per run (clean 300, clean 2,400, Standard through the Virtual_Tape_Channel) to keep the run time down.
 - **Arbitraries:**
   - Plaintext: `fc.uint8Array({ minLength: 1, maxLength: 15_360 })`, with a bias toward small sizes.
-  - Password: `fc.string({ unit: 'binary', minLength: 1, maxLength: 64 })`, which includes characters outside the Basic Multilingual Plane and combining marks.
+  - Password: `fc.string({ unit: 'binary', minLength: 1, maxLength: 64 })` filtered to exclude U+0000, which includes characters outside the Basic Multilingual Plane and combining marks. U+0000 is excluded because the Vault_Engine rejects it (Requirements 1.5, 1.9); unit tests cover that rejection.
   - Shard subsets: `fc.shuffledSubarray`.
   - Damage: positions and non-zero XOR masks.
   - Channel: `fc.double` within the ranges, plus `fc.integer` for the seed.

@@ -1,0 +1,368 @@
+{
+  "pbtResults": {
+    "4.5 Write property test for seal and open round trip": {
+      "status": "passed",
+      "lastRunTimestamp": 1794563191288
+    },
+    "4.6 Write property test for authentication": {
+      "status": "passed",
+      "lastRunTimestamp": 1794564820150
+    },
+    "5.6 Write property test for Shamir threshold reconstruction": {
+      "status": "passed",
+      "lastRunTimestamp": 1794570211498
+    },
+    "5.7 Write property test for Reed-Solomon repair": {
+      "status": "passed",
+      "lastRunTimestamp": 1794570215025
+    }
+  },
+  "executionHistory": {
+    "3.1 Write `scripts/airgap-scan.mjs` with a shared word list": [
+      {
+        "executionId": "a2a06403-af36-4fb2-bb69-216cb73a40a8",
+        "chatSessionId": "sess_e66a62dd-c21a-4423-94f7-2409076032d1",
+        "timestamp": 1794560516738
+      },
+      {
+        "executionId": "a2a06403-af36-4fb2-bb69-216cb73a40a8",
+        "chatSessionId": "sess_e66a62dd-c21a-4423-94f7-2409076032d1",
+        "timestamp": 1794560949154
+      }
+    ],
+    "3.4 Create the save-check hook": [
+      {
+        "executionId": "a2a06403-af36-4fb2-bb69-216cb73a40a8",
+        "chatSessionId": "sess_e66a62dd-c21a-4423-94f7-2409076032d1",
+        "timestamp": 1794560516929
+      },
+      {
+        "executionId": "a2a06403-af36-4fb2-bb69-216cb73a40a8",
+        "chatSessionId": "sess_e66a62dd-c21a-4423-94f7-2409076032d1",
+        "timestamp": 1794560949494
+      }
+    ],
+    "3.5 Create `.kiro/agents/dsp-auditor.json` with `.kiro/steering/**/*.md` and the spec files as resources": [
+      {
+        "executionId": "a2a06403-af36-4fb2-bb69-216cb73a40a8",
+        "chatSessionId": "sess_e66a62dd-c21a-4423-94f7-2409076032d1",
+        "timestamp": 1794560517211
+      },
+      {
+        "executionId": "a2a06403-af36-4fb2-bb69-216cb73a40a8",
+        "chatSessionId": "sess_e66a62dd-c21a-4423-94f7-2409076032d1",
+        "timestamp": 1794560950433
+      }
+    ],
+    "3.2 Write `test/airgap-scan.test.ts`": [
+      {
+        "executionId": "a2a06403-af36-4fb2-bb69-216cb73a40a8",
+        "chatSessionId": "sess_e66a62dd-c21a-4423-94f7-2409076032d1",
+        "timestamp": 1794560969320
+      },
+      {
+        "executionId": "a2a06403-af36-4fb2-bb69-216cb73a40a8",
+        "chatSessionId": "sess_e66a62dd-c21a-4423-94f7-2409076032d1",
+        "timestamp": 1794561255136
+      }
+    ],
+    "3.3 Write `scripts/airgap-hook.mjs` and create the pre-write hook": [
+      {
+        "executionId": "a2a06403-af36-4fb2-bb69-216cb73a40a8",
+        "chatSessionId": "sess_e66a62dd-c21a-4423-94f7-2409076032d1",
+        "timestamp": 1794560969471
+      },
+      {
+        "executionId": "a2a06403-af36-4fb2-bb69-216cb73a40a8",
+        "chatSessionId": "sess_e66a62dd-c21a-4423-94f7-2409076032d1",
+        "timestamp": 1794561255378
+      }
+    ],
+    "3. BV-03 Air-gap scanner, hooks, and DSP Auditor agent": [
+      {
+        "executionId": "a2a06403-af36-4fb2-bb69-216cb73a40a8",
+        "chatSessionId": "sess_e66a62dd-c21a-4423-94f7-2409076032d1",
+        "timestamp": 1794561255515
+      }
+    ],
+    "4.1 Create `src/core/errors.ts` and `src/core/bytes.ts`": [
+      {
+        "executionId": "f665d354-48e2-4ff9-906b-f860c53b11eb",
+        "chatSessionId": "sess_0caed136-623f-4bd2-8e0d-4f2de8f88894",
+        "timestamp": 1794561870498
+      },
+      {
+        "executionId": "f665d354-48e2-4ff9-906b-f860c53b11eb",
+        "chatSessionId": "sess_0caed136-623f-4bd2-8e0d-4f2de8f88894",
+        "timestamp": 1794562100664
+      }
+    ],
+    "4.2 Implement `src/crypto/compress.ts`": [
+      {
+        "executionId": "f665d354-48e2-4ff9-906b-f860c53b11eb",
+        "chatSessionId": "sess_0caed136-623f-4bd2-8e0d-4f2de8f88894",
+        "timestamp": 1794562101208
+      },
+      {
+        "executionId": "f665d354-48e2-4ff9-906b-f860c53b11eb",
+        "chatSessionId": "sess_0caed136-623f-4bd2-8e0d-4f2de8f88894",
+        "timestamp": 1794562442680
+      }
+    ],
+    "4.3 Implement `seal` and `open` in `src/crypto/vault.ts`": [
+      {
+        "executionId": "f665d354-48e2-4ff9-906b-f860c53b11eb",
+        "chatSessionId": "sess_0caed136-623f-4bd2-8e0d-4f2de8f88894",
+        "timestamp": 1794562443350
+      },
+      {
+        "executionId": "f665d354-48e2-4ff9-906b-f860c53b11eb",
+        "chatSessionId": "sess_0caed136-623f-4bd2-8e0d-4f2de8f88894",
+        "timestamp": 1794563081150
+      }
+    ],
+    "4.4 Write unit tests for the vault engine": [
+      {
+        "executionId": "f665d354-48e2-4ff9-906b-f860c53b11eb",
+        "chatSessionId": "sess_0caed136-623f-4bd2-8e0d-4f2de8f88894",
+        "timestamp": 1794563085898
+      },
+      {
+        "executionId": "f665d354-48e2-4ff9-906b-f860c53b11eb",
+        "chatSessionId": "sess_0caed136-623f-4bd2-8e0d-4f2de8f88894",
+        "timestamp": 1794563513905
+      }
+    ],
+    "4.5 Write property test for seal and open round trip": [
+      {
+        "executionId": "f665d354-48e2-4ff9-906b-f860c53b11eb",
+        "chatSessionId": "sess_0caed136-623f-4bd2-8e0d-4f2de8f88894",
+        "timestamp": 1794563087123
+      },
+      {
+        "executionId": "f665d354-48e2-4ff9-906b-f860c53b11eb",
+        "chatSessionId": "sess_0caed136-623f-4bd2-8e0d-4f2de8f88894",
+        "timestamp": 1794563514109
+      }
+    ],
+    "4.6 Write property test for authentication": [
+      {
+        "executionId": "f665d354-48e2-4ff9-906b-f860c53b11eb",
+        "chatSessionId": "sess_0caed136-623f-4bd2-8e0d-4f2de8f88894",
+        "timestamp": 1794563087459
+      },
+      {
+        "executionId": "f665d354-48e2-4ff9-906b-f860c53b11eb",
+        "chatSessionId": "sess_0caed136-623f-4bd2-8e0d-4f2de8f88894",
+        "timestamp": 1794564843039
+      }
+    ],
+    "4. BV-04 Vault engine: compression and AES-256-GCM": [
+      {
+        "executionId": "f665d354-48e2-4ff9-906b-f860c53b11eb",
+        "chatSessionId": "sess_0caed136-623f-4bd2-8e0d-4f2de8f88894",
+        "timestamp": 1794564843148
+      }
+    ],
+    "5.1 Implement `src/gf256/gf256.ts` (0x11D, α = 0x02, exp/log tables)": [
+      {
+        "executionId": "21604ad8-06da-46c1-bff8-7e154d68dd4f",
+        "chatSessionId": "sess_6ed77a68-2571-42d6-9ff3-ee8f3e5095e4",
+        "timestamp": 1794566941204
+      },
+      {
+        "executionId": "21604ad8-06da-46c1-bff8-7e154d68dd4f",
+        "chatSessionId": "sess_6ed77a68-2571-42d6-9ff3-ee8f3e5095e4",
+        "timestamp": 1794567055218
+      }
+    ],
+    "5.2 Implement `src/shamir/shamir.ts`": [
+      {
+        "executionId": "21604ad8-06da-46c1-bff8-7e154d68dd4f",
+        "chatSessionId": "sess_6ed77a68-2571-42d6-9ff3-ee8f3e5095e4",
+        "timestamp": 1794567074523
+      },
+      {
+        "executionId": "21604ad8-06da-46c1-bff8-7e154d68dd4f",
+        "chatSessionId": "sess_6ed77a68-2571-42d6-9ff3-ee8f3e5095e4",
+        "timestamp": 1794569401291
+      }
+    ],
+    "5.3 Implement `src/fec/reed-solomon.ts` and `src/fec/crc.ts`": [
+      {
+        "executionId": "21604ad8-06da-46c1-bff8-7e154d68dd4f",
+        "chatSessionId": "sess_6ed77a68-2571-42d6-9ff3-ee8f3e5095e4",
+        "timestamp": 1794567074630
+      },
+      {
+        "executionId": "21604ad8-06da-46c1-bff8-7e154d68dd4f",
+        "chatSessionId": "sess_6ed77a68-2571-42d6-9ff3-ee8f3e5095e4",
+        "timestamp": 1794569401657
+      }
+    ],
+    "5.4 Implement `src/tape/framer.ts`": [
+      {
+        "executionId": "21604ad8-06da-46c1-bff8-7e154d68dd4f",
+        "chatSessionId": "sess_6ed77a68-2571-42d6-9ff3-ee8f3e5095e4",
+        "timestamp": 1794569407059
+      },
+      {
+        "executionId": "21604ad8-06da-46c1-bff8-7e154d68dd4f",
+        "chatSessionId": "sess_6ed77a68-2571-42d6-9ff3-ee8f3e5095e4",
+        "timestamp": 1794569887304
+      }
+    ],
+    "5.5 Write unit tests for GF(256), CRC, Reed-Solomon, framer, and Shamir": [
+      {
+        "executionId": "21604ad8-06da-46c1-bff8-7e154d68dd4f",
+        "chatSessionId": "sess_6ed77a68-2571-42d6-9ff3-ee8f3e5095e4",
+        "timestamp": 1794569893601
+      },
+      {
+        "executionId": "21604ad8-06da-46c1-bff8-7e154d68dd4f",
+        "chatSessionId": "sess_6ed77a68-2571-42d6-9ff3-ee8f3e5095e4",
+        "timestamp": 1794570475310
+      }
+    ],
+    "5.6 Write property test for Shamir threshold reconstruction": [
+      {
+        "executionId": "21604ad8-06da-46c1-bff8-7e154d68dd4f",
+        "chatSessionId": "sess_6ed77a68-2571-42d6-9ff3-ee8f3e5095e4",
+        "timestamp": 1794569894654
+      },
+      {
+        "executionId": "21604ad8-06da-46c1-bff8-7e154d68dd4f",
+        "chatSessionId": "sess_6ed77a68-2571-42d6-9ff3-ee8f3e5095e4",
+        "timestamp": 1794570475546
+      }
+    ],
+    "5.7 Write property test for Reed-Solomon repair": [
+      {
+        "executionId": "21604ad8-06da-46c1-bff8-7e154d68dd4f",
+        "chatSessionId": "sess_6ed77a68-2571-42d6-9ff3-ee8f3e5095e4",
+        "timestamp": 1794569895406
+      },
+      {
+        "executionId": "21604ad8-06da-46c1-bff8-7e154d68dd4f",
+        "chatSessionId": "sess_6ed77a68-2571-42d6-9ff3-ee8f3e5095e4",
+        "timestamp": 1794570476577
+      }
+    ],
+    "5. BV-05 GF(256), Shamir Secret Sharing, Reed-Solomon (255, 223), and framer": [
+      {
+        "executionId": "21604ad8-06da-46c1-bff8-7e154d68dd4f",
+        "chatSessionId": "sess_6ed77a68-2571-42d6-9ff3-ee8f3e5095e4",
+        "timestamp": 1794570476681
+      }
+    ],
+    "6.1 Implement `src/modem/kcs-modulator.ts`": [
+      {
+        "executionId": "bb8c2042-482f-49b1-b5ac-2c941ed56a26",
+        "chatSessionId": "sess_20999637-8122-4e47-b66b-638e123f9398",
+        "timestamp": 1794572107122
+      },
+      {
+        "executionId": "bb8c2042-482f-49b1-b5ac-2c941ed56a26",
+        "chatSessionId": "sess_20999637-8122-4e47-b66b-638e123f9398",
+        "timestamp": 1794572116606
+      },
+      {
+        "executionId": "bb8c2042-482f-49b1-b5ac-2c941ed56a26",
+        "chatSessionId": "sess_20999637-8122-4e47-b66b-638e123f9398",
+        "timestamp": 1794572476954
+      }
+    ],
+    "6.2 Implement `src/modem/wav.ts`": [
+      {
+        "executionId": "bb8c2042-482f-49b1-b5ac-2c941ed56a26",
+        "chatSessionId": "sess_20999637-8122-4e47-b66b-638e123f9398",
+        "timestamp": 1794572107863
+      },
+      {
+        "executionId": "bb8c2042-482f-49b1-b5ac-2c941ed56a26",
+        "chatSessionId": "sess_20999637-8122-4e47-b66b-638e123f9398",
+        "timestamp": 1794572481935
+      },
+      {
+        "executionId": "bb8c2042-482f-49b1-b5ac-2c941ed56a26",
+        "chatSessionId": "sess_20999637-8122-4e47-b66b-638e123f9398",
+        "timestamp": 1794576780358
+      }
+    ],
+    "6.3 Implement `src/modem/goertzel.ts` and `src/modem/bit-demodulator.ts`": [
+      {
+        "executionId": "bb8c2042-482f-49b1-b5ac-2c941ed56a26",
+        "chatSessionId": "sess_20999637-8122-4e47-b66b-638e123f9398",
+        "timestamp": 1794572108868
+      },
+      {
+        "executionId": "bb8c2042-482f-49b1-b5ac-2c941ed56a26",
+        "chatSessionId": "sess_20999637-8122-4e47-b66b-638e123f9398",
+        "timestamp": 1794572482308
+      },
+      {
+        "executionId": "bb8c2042-482f-49b1-b5ac-2c941ed56a26",
+        "chatSessionId": "sess_20999637-8122-4e47-b66b-638e123f9398",
+        "timestamp": 1794576781825
+      }
+    ],
+    "6.4 Implement `src/tape/tape-decoder.ts`": [
+      {
+        "executionId": "bb8c2042-482f-49b1-b5ac-2c941ed56a26",
+        "chatSessionId": "sess_20999637-8122-4e47-b66b-638e123f9398",
+        "timestamp": 1794572109863
+      },
+      {
+        "executionId": "bb8c2042-482f-49b1-b5ac-2c941ed56a26",
+        "chatSessionId": "sess_20999637-8122-4e47-b66b-638e123f9398",
+        "timestamp": 1794576788472
+      },
+      {
+        "executionId": "bb8c2042-482f-49b1-b5ac-2c941ed56a26",
+        "chatSessionId": "sess_20999637-8122-4e47-b66b-638e123f9398",
+        "timestamp": 1794577336574
+      }
+    ],
+    "6.5 Write unit tests for the modulator, WAV codec, and Tape_Decoder": [
+      {
+        "executionId": "bb8c2042-482f-49b1-b5ac-2c941ed56a26",
+        "chatSessionId": "sess_20999637-8122-4e47-b66b-638e123f9398",
+        "timestamp": 1794572110867
+      },
+      {
+        "executionId": "bb8c2042-482f-49b1-b5ac-2c941ed56a26",
+        "chatSessionId": "sess_20999637-8122-4e47-b66b-638e123f9398",
+        "timestamp": 1794577342352
+      },
+      {
+        "executionId": "bb8c2042-482f-49b1-b5ac-2c941ed56a26",
+        "chatSessionId": "sess_20999637-8122-4e47-b66b-638e123f9398",
+        "timestamp": 1794578000763
+      }
+    ],
+    "6.6 Write a benchmark test for the demodulator": [
+      {
+        "executionId": "bb8c2042-482f-49b1-b5ac-2c941ed56a26",
+        "chatSessionId": "sess_20999637-8122-4e47-b66b-638e123f9398",
+        "timestamp": 1794572111651
+      },
+      {
+        "executionId": "bb8c2042-482f-49b1-b5ac-2c941ed56a26",
+        "chatSessionId": "sess_20999637-8122-4e47-b66b-638e123f9398",
+        "timestamp": 1794577342505
+      },
+      {
+        "executionId": "bb8c2042-482f-49b1-b5ac-2c941ed56a26",
+        "chatSessionId": "sess_20999637-8122-4e47-b66b-638e123f9398",
+        "timestamp": 1794578001041
+      }
+    ],
+    "6. BV-06 Kansas City Standard modulator and Goertzel demodulator": [
+      {
+        "executionId": "bb8c2042-482f-49b1-b5ac-2c941ed56a26",
+        "chatSessionId": "sess_20999637-8122-4e47-b66b-638e123f9398",
+        "timestamp": 1794578001174
+      }
+    ]
+  }
+}
