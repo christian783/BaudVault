@@ -185,6 +185,32 @@ export class TapeDecoder {
   }
 
   /**
+   * True while some lane holds an accepted Carrier_Lock, from leader
+   * detection until the record ends or the signal is lost. In auto mode this
+   * turns on at the leader, before the `lock` event (which waits for the
+   * header). Read-only view for the UI's LOCK lamp.
+   */
+  get carrierLock(): boolean {
+    return this.#carrier
+  }
+
+  /**
+   * Latest 1,200 Hz (`space`) and 2,400 Hz (`mark`) Goertzel energies of the
+   * lane that drives trace B, for the UI energy bars. The object is updated in
+   * place by the demodulator; treat it as read-only.
+   */
+  get energies(): Readonly<{ mark: number; space: number }> {
+    return this.#scopeLane().demod.energies
+  }
+
+  /** The lane whose d[n] feeds trace B: the same choice `push` makes. */
+  #scopeLane(): Lane {
+    if (this.#winner !== null) return this.#winner
+    const lanes = this.#lanes.filter((lane) => !lane.discarded)
+    return lanes.find((lane) => lane.baud === 300) ?? lanes[0] ?? this.#lanes[0]!
+  }
+
+  /**
    * Feeds samples and returns the events they produced, in order. Chunk
    * boundaries do not affect the result.
    */

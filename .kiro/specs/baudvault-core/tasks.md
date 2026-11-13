@@ -110,26 +110,26 @@ The plan follows the four waves in `tickets&specs.md`. Each top-level task is on
     - Record the result under decision D1 in `design.md`
     - _Requirements: 6.5_
 
-- [ ] 8. BV-08 CRT oscilloscope UI and virtual cassette deck
+- [x] 8. BV-08 CRT oscilloscope UI and virtual cassette deck
   - _Wave 3, depends on 4, 6, 7_
   - [x] 8.1 Implement `src/audio/playback.ts`, `src/audio/microphone.ts`, and `src/audio/mic-worklet.ts`
     - Stop releases every `MediaStreamTrack`
     - Play with the Virtual_Tape_Channel on is processed; imports and exports are not
     - _Requirements: 4.6, 5.6, 5.8, 6.2, 6.6, 7.21_
-  - [ ] 8.2 Build the Record and Deck panels, including the password warning
+  - [x] 8.2 Build the Record and Deck panels, including the password warning
     - _Requirements: 6.1, 6.2, 7.1, 7.14, 7.15, 7.16, 7.17, 7.18, 7.19, 7.20, 7.21, 7.22, 7.25, 7.26_
-  - [ ] 8.3 Build the oscilloscope canvas, energy bars, LOCK lamp, and telemetry readout
+  - [x] 8.3 Build the oscilloscope canvas, energy bars, LOCK lamp, and telemetry readout
     - _Requirements: 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8_
-  - [ ] 8.4 Build Shard collection, Unlock, Reveal, Clear, reduced-motion reels, busy state, and error display
+  - [x] 8.4 Build Shard collection, Unlock, Reveal, Clear, reduced-motion reels, busy state, and error display
     - Keep secrets out of storage, logs, and the URL
     - _Requirements: 7.9, 7.10, 7.11, 7.12, 7.13, 7.23, 7.24, 7.27, 7.28, 8.4_
-  - [ ] 8.5 Implement accessibility
+  - [x] 8.5 Implement accessibility
     - Keyboard order, focus ring, accessible names, contrast, polite live region without secrets, text equivalents for the canvas, masked secret for assistive technology
     - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7, 9.8_
-  - [ ] 8.6 Implement startup feature detection
+  - [x] 8.6 Implement startup feature detection
     - Name each missing feature and disable only the affected functions
     - _Requirements: 10.2, 10.3_
-  - [ ] 8.7 Write unit tests for the pure UI helpers
+  - [x] 8.7 Write unit tests for the pure UI helpers
     - Password length rule, error message mapping, feature detection, Shard grouping by set ID
     - _Requirements: 7.9, 7.25, 7.26, 7.28, 10.2, 10.3_
 

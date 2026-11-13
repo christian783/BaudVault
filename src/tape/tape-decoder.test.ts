@@ -250,3 +250,27 @@ describe('record failures (Requirements 3.4, 3.7)', () => {
     expect(failure!.stats.uncorrectableBlocks).toEqual([])
   })
 })
+
+describe('UI accessors (Requirements 7.3, 7.6)', () => {
+  it('reports Carrier_Lock from the leader in auto mode, before the lock event, and clears it after the record', () => {
+    const samples = modulate(frame(SHORT_BODY, 'envelope', 2400), 2400)
+    const decoder = new TapeDecoder({ sampleRate: SAMPLE_RATE })
+    expect(decoder.carrierLock).toBe(false)
+
+    // 1.5 s into the 2 s leader: the lanes have locked, but no header yet.
+    const leaderEnd = Math.round(1.5 * SAMPLE_RATE)
+    expect(decoder.push(samples.subarray(0, leaderEnd))).toEqual([])
+    expect(decoder.carrierLock).toBe(true)
+    // A clean 2,400 Hz leader: mark energy about 0.7² dominates space energy.
+    expect(decoder.energies.mark).toBeGreaterThan(0.3)
+    expect(decoder.energies.mark).toBeGreaterThan(decoder.energies.space * 10)
+
+    const events = decoder.push(samples.subarray(leaderEnd))
+    expect(types(events)).toEqual(['lock', 'header', 'progress', 'record', 'unlock'])
+    expect(decoder.carrierLock).toBe(false)
+
+    decoder.push(silence(0.2))
+    expect(decoder.energies.mark).toBeLessThan(1e-6)
+    expect(decoder.energies.space).toBeLessThan(1e-6)
+  })
+})

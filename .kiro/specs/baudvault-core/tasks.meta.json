@@ -430,6 +430,85 @@
         "chatSessionId": "sess_37f53dac-0c7c-49b8-8022-0f9fdc0bbdb6",
         "timestamp": 1794591390104
       }
+    ],
+    "8.2 Build the Record and Deck panels, including the password warning": [
+      {
+        "executionId": "e750888a-ab27-42d9-8cbd-4112cbe2cad8",
+        "chatSessionId": "sess_4f7d4d36-9f97-4f9c-8b43-5bb76958f900",
+        "timestamp": 1794591572159
+      },
+      {
+        "executionId": "e750888a-ab27-42d9-8cbd-4112cbe2cad8",
+        "chatSessionId": "sess_4f7d4d36-9f97-4f9c-8b43-5bb76958f900",
+        "timestamp": 1794592303646
+      }
+    ],
+    "8.3 Build the oscilloscope canvas, energy bars, LOCK lamp, and telemetry readout": [
+      {
+        "executionId": "e750888a-ab27-42d9-8cbd-4112cbe2cad8",
+        "chatSessionId": "sess_4f7d4d36-9f97-4f9c-8b43-5bb76958f900",
+        "timestamp": 1794592308702
+      },
+      {
+        "executionId": "e750888a-ab27-42d9-8cbd-4112cbe2cad8",
+        "chatSessionId": "sess_4f7d4d36-9f97-4f9c-8b43-5bb76958f900",
+        "timestamp": 1794593615179
+      }
+    ],
+    "8.4 Build Shard collection, Unlock, Reveal, Clear, reduced-motion reels, busy state, and error display": [
+      {
+        "executionId": "e750888a-ab27-42d9-8cbd-4112cbe2cad8",
+        "chatSessionId": "sess_4f7d4d36-9f97-4f9c-8b43-5bb76958f900",
+        "timestamp": 1794593619542
+      },
+      {
+        "executionId": "e750888a-ab27-42d9-8cbd-4112cbe2cad8",
+        "chatSessionId": "sess_4f7d4d36-9f97-4f9c-8b43-5bb76958f900",
+        "timestamp": 1794594822545
+      }
+    ],
+    "8.5 Implement accessibility": [
+      {
+        "executionId": "e750888a-ab27-42d9-8cbd-4112cbe2cad8",
+        "chatSessionId": "sess_4f7d4d36-9f97-4f9c-8b43-5bb76958f900",
+        "timestamp": 1794594827931
+      },
+      {
+        "executionId": "e750888a-ab27-42d9-8cbd-4112cbe2cad8",
+        "chatSessionId": "sess_4f7d4d36-9f97-4f9c-8b43-5bb76958f900",
+        "timestamp": 1794596135275
+      }
+    ],
+    "8.6 Implement startup feature detection": [
+      {
+        "executionId": "e750888a-ab27-42d9-8cbd-4112cbe2cad8",
+        "chatSessionId": "sess_4f7d4d36-9f97-4f9c-8b43-5bb76958f900",
+        "timestamp": 1794596140350
+      },
+      {
+        "executionId": "e750888a-ab27-42d9-8cbd-4112cbe2cad8",
+        "chatSessionId": "sess_4f7d4d36-9f97-4f9c-8b43-5bb76958f900",
+        "timestamp": 1794596815568
+      }
+    ],
+    "8.7 Write unit tests for the pure UI helpers": [
+      {
+        "executionId": "e750888a-ab27-42d9-8cbd-4112cbe2cad8",
+        "chatSessionId": "sess_4f7d4d36-9f97-4f9c-8b43-5bb76958f900",
+        "timestamp": 1794596819913
+      },
+      {
+        "executionId": "e750888a-ab27-42d9-8cbd-4112cbe2cad8",
+        "chatSessionId": "sess_4f7d4d36-9f97-4f9c-8b43-5bb76958f900",
+        "timestamp": 1794597419471
+      }
+    ],
+    "8. BV-08 CRT oscilloscope UI and virtual cassette deck": [
+      {
+        "executionId": "e750888a-ab27-42d9-8cbd-4112cbe2cad8",
+        "chatSessionId": "sess_4f7d4d36-9f97-4f9c-8b43-5bb76958f900",
+        "timestamp": 1794597419649
+      }
     ]
   }
 }
