@@ -69,8 +69,8 @@ src/
   shamir/      shamir.ts (split/combine, Shard encode/parse)
   fec/         reed-solomon.ts, crc.ts (CRC-32, CRC-16/CCITT-FALSE)
   tape/        framer.ts (Header_Frame, interleave, frame/unframe), tape-decoder.ts (streaming)
-  modem/       kcs-modulator.ts, goertzel.ts, bit-demodulator.ts, wav.ts
-  channel/     virtual-tape.ts, biquad.ts, prng.ts
+  modem/       kcs-modulator.ts, goertzel.ts, bit-demodulator.ts, wav.ts, biquad.ts (shared with channel)
+  channel/     virtual-tape.ts, prng.ts
   audio/       playback.ts, microphone.ts, mic-worklet.ts
   ui/          React components and hooks
   properties/  p1-…p5-*.property.test.ts (BV-09)
@@ -82,7 +82,7 @@ netlify.toml   build command and publish directory
 
 `scripts/`, `test/`, `public/_headers`, and `netlify.toml` sit outside `src/`, so the source rule in Air-Gap Enforcement does not apply to them. The scanner, hook script, and network stubs need this because they name the forbidden identifiers.
 
-Unit tests sit next to the module they test as `*.test.ts`. Imports flow downward only: `ui → audio → tape → (modem, fec) → gf256 → core`. Nothing in the pure core imports from `audio` or `ui`.
+Unit tests sit next to the module they test as `*.test.ts`. Imports flow downward only: `ui → audio → tape → (modem, fec) → gf256 → core`. Nothing in the pure core imports from `audio` or `ui`. `channel` sits beside `tape` and may import `modem`; `modem` never imports `channel`, which is why the biquad lives in `modem/`.
 
 ## Components and Interfaces
 
@@ -217,20 +217,30 @@ export function decodeWav(file: Uint8Array): { samples: Float32Array; sampleRate
 
 ### Goertzel and bit demodulator (`src/modem/goertzel.ts`, `src/modem/bit-demodulator.ts`)
 
+**Turbo pre-filter.** At 2,400 baud the input first passes a 700 Hz high-pass and a 3,500 Hz low-pass, both 2nd-order Butterworth RBJ biquads (`src/modem/biquad.ts`, Q = 1/√2, float64 state). It removes out-of-band hiss before the Goertzel window, which keeps Carrier_Lock and the bit decisions stable at high Hiss_Level. The band was chosen by measurement (D1 re-measurement): 900 to 3,000 Hz and 1,000 to 2,800 Hz added slightly more inter-symbol interference, 500 to 5,000 Hz let in more hiss. Standard_Mode has no pre-filter and does not need one.
+
 **Sliding Goertzel.** For each input sample, two sliding single-bin DFTs measure the energy of the last `W = round(sampleRate / baud)` samples at 1,200 Hz and at 2,400 Hz. The recursive form is `X ← (X + x[n] − e^{jωW} · x[n − W]) · e^{jω}` in float64, which keeps `X = Σ_{k=0}^{W−1} x[n − k] · e^{jω(k+1)}`. The factor `e^{jωW}` equals 1 only when the window holds a whole number of cycles (300 baud at 44.1 kHz). At 2,400 baud the window holds 0.49 cycles of 1,200 Hz and 0.98 of 2,400 Hz, so leaving it out corrupts both sums. To bound rounding drift, both sums are recomputed directly from the window every 4,096 samples.
 
 **Decision signal.** `d[n] = (E₂₄₀₀ − E₁₂₀₀) / (E₂₄₀₀ + E₁₂₀₀ + ε)` lies in [−1, 1]. Positive means mark (1), negative means space (0). `d` is also trace B on the oscilloscope. `ε` equals the energy of a −50 dBFS tone over one window, so silence reads as 0.
 
 **Carrier_Lock.** Lock starts when `d` is above the lock threshold and total energy is above the −40 dBFS floor for 0.5 seconds without a break. The lock threshold is 0.5 at 300 baud and 0 at 2,400 baud. At 2,400 baud the one-bit window holds only half a cycle of 1,200 Hz, so `d` during a clean mark leader swings between about 0.16 and 0.68 (minimum 0.151 at 22.05 kHz, 0.161 at 44.1 kHz, 0.168 at 48 kHz; measured in task 6.3), and `d > 0.5` would never hold for 0.5 seconds. At 300 baud a clean leader reads `d` ≈ 1.000. Lock is lost when total energy stays below the floor for 22 bit periods (2 frames), or when the Tape_Decoder releases it.
 
-**Start-bit search.** After lock, the decoder looks for a mark-to-space crossing of `d`. Because the window is one bit long, the crossing lags the true edge by about half a bit, so the estimated edge is `t_edge = t_cross − W / 2`. The candidate is accepted only if `d < 0` at `t_edge + 1.0 · T` (the end of the start bit's window, where `T` is the current bit period estimate). This rejects noise spikes during the leader.
+**Start-bit search.** After lock, the decoder looks once for a mark-to-space crossing of `d`. Because the window is one bit long, the crossing lags the true edge by about half a bit, so the estimated edge is `t_edge = t_cross − W / 2`. The candidate is accepted only if `d < 0` at `t_edge + 1.0 · T` (the end of the start bit's window, where `T` is the current bit period estimate). This rejects noise spikes during the leader.
 
 **Bit sampling.** Bit `i` of a frame (0 = start bit, 1–8 = data LSB first, 9–10 = stop) is decided by the sign of `d` at sample `t_edge + (i + 1) · T`, the moment the one-bit window exactly covers that bit.
 
-**Clock recovery and flywheel.** The next frame's start edge is expected at `t_edge + 11 · T`. The decoder searches for a mark-to-space crossing within ±0.5 T of that point.
-- If found, it becomes the new `t_edge`, and `T` is updated by `T ← T + 0.25 · (measured_frame / 11 − T)`, clamped to ±10% of nominal. This tracks wow-and-flutter up to 5%.
-- If not found, `t_edge` moves to the expected point, and a byte is still emitted.
-- A byte is emitted for every frame period while lock is held, so the byte count never slips. The consumer decides when to stop.
+**Byte clock.** After the first start edge there is no more start-bit search. Each frame's bits are decided as above, one byte is emitted, and the next start edge is set to `t_edge + 11 · T + c`, where `c` is a bounded timing correction. A byte is emitted for every frame period while lock is held, so the byte count never slips. The consumer decides when to stop.
+- **Timing error.** Every bit transition of the frame, including stop → next start, is a timing reference. The start (0) and stop (1, 1) bits are known; the data bits are the decisions just made. At a transition between bit `j − 1` and bit `j`, `d` at `t_edge + (j + ½) · T` (midway between the two decision points) is about 0 when the clock is right and has the sign of bit `j − 1` when the clock is early. The error is the mean of these signed samples over the frame's transitions (at least two per frame).
+- **Correction.** `c = gain · W · error`, clamped to `maxStep` of a nominal bit. Then `T ← T + periodGain · c / 11`, clamped to ±10% of nominal, so `T` follows the slow part of wow-and-flutter.
+
+| Baud | gain | periodGain | maxStep |
+|---|---|---|---|
+| 300 | 0.25 | 0.25 | 0.4 bit (59 samples at 44.1 kHz) |
+| 2,400 | 1.4 | 0.4 | 0.16 bit (2.9 samples at 44.1 kHz) |
+
+- **Why it does not slip.** `d` is bounded and `c` is clamped well under half a bit, so one noisy start or stop bit moves the clock by a fraction of a bit and cannot shift the frame by whole bits. The previous design re-searched the start edge every frame and jumped to the nearest crossing within ±0.5 T; under hiss a false crossing moved the clock by up to half a bit at once, and that caused the long error runs in the D1 measurement.
+- **Wow budget at 2,400 baud.** The wow model `s(t) = 1 + wow · (0.8 sin(2π · 0.5 t) + 0.2 sin(2π · 12 t))` at 2% drifts at most about 3.2 samples per 11-bit frame from the 0.5 Hz term, which the `T` loop absorbs, plus about 0.8 samples per frame from the 12 Hz term, which `c` must follow. The 2.9-sample clamp leaves about 3.5 times that. Measured at 15% hiss: a 1.5-sample clamp (0.08 bit, with periodGain 0.1) passed at 2% wow but reached 62% raw byte errors at 4%; the final values keep raw byte errors at 0.06% at 5% wow.
+- **Wow budget at 300 baud.** A frame lasts 1,617 samples, so 2% wow drifts up to about 26 samples per frame, hence the 0.4-bit clamp. With these values Standard_Mode had no raw byte errors at 60% hiss and 5% wow over 20 Bodies.
 
 ```ts
 export class BitDemodulator {
@@ -261,7 +271,7 @@ export class TapeDecoder {
 }
 ```
 
-- Without a fixed baud, two `BitDemodulator`s (300 and 2,400) run side by side. Each reads 96 bytes after locking and tries both Header_Frame copies. The first to produce a valid header whose baud code matches its own rate wins, and the other is discarded.
+- Without a fixed baud, two `BitDemodulator`s (300 and 2,400) run side by side, each with its own pre-filter (2,400 only) and byte clock. Each reads 96 bytes after locking and tries both Header_Frame copies. The first to produce a valid header whose baud code matches its own rate wins, and the other is discarded.
 - If neither copy of the header is valid, the decoder releases lock silently and returns to carrier search, so live microphone listening continues. It emits `unlock` but no `record` and no `error` (Requirement 3.9).
 - After a valid header, the decoder collects `255 · B` data bytes. Each time an Interleave_Group completes, it de-interleaves the group, decodes its Codewords, and emits `progress`. After the last group it strips padding, checks the CRC-32, and emits `record` or `error`.
 - The decoder decodes every Interleave_Group even after a Codeword fails. At the end it emits one `error` event carrying an `UncorrectableError` whose `blocks` lists the zero-based index of every uncorrectable Codeword in the Tape_Record (Requirement 3.4). The CRC-32 check runs only when every Codeword decoded.
@@ -565,7 +575,7 @@ Each property is implemented as one fast-check suite in `src/properties/` with 2
 
 ### Property 5: Acoustic round trip
 
-*For any* Body of 1 to 32 bytes, demodulating the modulated Tape_Record returns the original Body with zero corrected bytes at both 300 and 2,400 baud. In Standard_Mode the Body also comes back unchanged after passing through the Virtual_Tape_Channel with *any* Hiss_Level from 0% to 30%, *any* Wow_Level from 0% to 2%, and *any* seed.
+*For any* Body of 1 to 32 bytes, demodulating the modulated Tape_Record returns the original Body with zero corrected bytes at both 300 and 2,400 baud. In Standard_Mode and in Turbo_Mode the Body also comes back unchanged after passing through the Virtual_Tape_Channel with *any* Hiss_Level from 0% to 30%, *any* Wow_Level from 0% to 2%, and *any* seed.
 
 **Validates: Requirements 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.7, 6.3, 6.5**
 
@@ -677,7 +687,7 @@ The offline service worker is generated into `dist/` by the build plugin, not wr
   - scanner pass and fail cases in `test/airgap-scan.test.ts`: clean source passes, each of the six words fails with `file:line`, a substring such as `fetchSamples` fails in source mode, and `fetchPriority` passes in dist mode.
 - **Property tests:** P1 to P5 as above, 200 runs each.
   - P1 and P2 pass `{ iterations: 1_000 }` to `seal`.
-  - P5 picks one of three channel cases per run (clean 300, clean 2,400, Standard through the Virtual_Tape_Channel) to keep the run time down.
+  - P5 picks one of four channel cases per run (clean 300, clean 2,400, Standard through the Virtual_Tape_Channel, Turbo through the Virtual_Tape_Channel) to keep the run time down.
 - **Arbitraries:**
   - Plaintext: `fc.uint8Array({ minLength: 1, maxLength: 15_360 })`, with a bias toward small sizes.
   - Password: `fc.string({ unit: 'binary', minLength: 1, maxLength: 64 })` filtered to exclude U+0000, which includes characters outside the Basic Multilingual Plane and combining marks. U+0000 is excluded because the Vault_Engine rejects it (Requirements 1.5, 1.9); unit tests cover that rejection.
@@ -685,8 +695,8 @@ The offline service worker is generated into `dist/` by the build plugin, not wr
   - Damage: positions and non-zero XOR masks.
   - Channel: `fc.double` within the ranges, plus `fc.integer` for the seed.
 - **Budget:** the full `npm test` run finishes in under 15 seconds, with zero counterexamples and zero network calls.
-  - P5 dominates. It runs 200 cases, and about two thirds of them are at 300 baud (clean 300 and Standard through the Virtual_Tape_Channel). That is about 133 cases of about 15 seconds of audio each (678,000 samples), or about 2,000 seconds of audio in total.
-  - To stay inside roughly 10 seconds of the 15-second budget, the 300-baud demodulator must process audio at least about 200 times faster than real time. The Virtual_Tape_Channel must also be fast enough for its share of about 67 cases.
+  - P5 dominates. It runs 200 cases, and about half of them are at 300 baud (clean 300 and Standard through the Virtual_Tape_Channel). That is about 100 cases of about 15 seconds of audio each (678,000 samples), or about 1,500 seconds of audio in total. The 2,400-baud cases are about 7.6 seconds of audio each.
+  - To stay inside roughly 10 seconds of the 15-second budget, the 300-baud demodulator must process audio at least about 200 times faster than real time. The Virtual_Tape_Channel must also be fast enough for its share of about 100 cases.
   - Task 6 benchmarks both rates and reports them against these targets.
   - P2 has a rare slow case. A flip of bit 22 of the iteration count gives about 4.2 million iterations, which takes about 2.5 seconds.
 - **Manual checks** (BV-08, BV-11):
@@ -701,7 +711,7 @@ The project owner accepted both recommendations below on November 13, 2026.
 
 | ID | Decision | Status |
 |---|---|---|
-| D1 | Keep Turbo_Mode at 2,400 baud with Goertzel. Measure it in BV-07 (task 7.3). If it misses the target, switch Turbo to 1,200 baud. | Accepted, measurement pending |
+| D1 | Keep Turbo_Mode at 2,400 baud with Goertzel. Measure it in BV-07 (task 7.3). If it misses the target, switch Turbo to 1,200 baud. | Resolved at 2,400 baud: the first measurement failed on 2026-11-13 (44 of 60), the re-measurement with the receiver changes passed 60 of 60 on two master seeds; fallback (b) not needed |
 | D2 | Seal with 600,000 PBKDF2 iterations instead of the ticket's 310,000. | Accepted, applied to Requirement 1.1 and this document |
 
 ### D1: Turbo_Mode detector at 2,400 baud
@@ -717,7 +727,7 @@ At 2,400 baud a bit lasts 18.375 samples, which is half a cycle of 1,200 Hz or o
 
 Reed-Solomon (255, 223) repairs up to 16 of 255 bytes, about 6.3%. So 2,400 baud should survive 30% hiss but not 60%.
 
-The thin clean margin is the risk. Clock-recovery error and 2% wow will shift sampling points and eat into it, and none of that was measured. For this reason Requirement 6.5 currently covers only Standard_Mode.
+The thin clean margin is the risk. Clock-recovery error and 2% wow will shift sampling points and eat into it, and none of that was measured. For this reason Requirement 6.5 covered only Standard_Mode until the D1 re-measurement.
 
 Options:
 - (a) Keep 2,400 baud. Measure Turbo through the full Virtual_Tape_Channel in BV-07, and if it meets 30% hiss and 2% wow, extend Requirement 6.5 and Property 5 to Turbo_Mode.
@@ -738,6 +748,62 @@ Pass criterion for task 7.3: a 2,400-baud Tape_Record decodes with no Uncorrecta
 
   Then re-check the Turbo burst tolerance against a 100 ms desk tap.
 - Record the measured numbers in this section either way.
+
+#### D1 measurement (task 7.3, 2026-11-13): FAILED
+
+- **Test:** `src/channel/turbo-measurement.test.ts`, master seed `0x7E5B2400`. Each case frames a random Body at 2,400 baud, modulates it, runs `applyTapeChannel` with its own random seed, and decodes with `TapeDecoder` in 2,048-sample chunks, once at a fixed 2,400 baud and once with auto-detect. A second pass with `demodulateBytes` gives the raw byte errors of every Codeword before repair.
+- **Reproduce:** `$env:BAUDVAULT_TURBO_MEASUREMENT = '1'; npx vitest run src/channel/turbo-measurement.test.ts` (PowerShell; about 25 s). Without the variable, `npm test` runs only a three-Body regression through the bandpass with no hiss and no wow.
+- **Result at 30% hiss and 2% wow:** 44 of 60 Bodies recovered, at fixed baud and with auto-detect alike. All 16 failures were `UncorrectableError`. No IntegrityError, lost record, or missing header occurred.
+  - Bodies 19 to 3,541 bytes, 20 of them spanning 2 to 4 Interleave_Groups, 428 Codewords in total.
+  - Raw byte error rate 10.9%, mean 29.1 errors per Codeword. 92 Codewords (21%) exceeded the 16-error limit, and the worst had 255 of 255 bytes wrong.
+  - Header_Frame copy 1 had at most 2 byte errors, so copy 2 was never needed. Recovered records had at most 60 corrected bytes.
+- **Margin and diagnostic points** (30 Bodies each, seed `0x7E5B2401`):
+
+| Hiss | Wow | Recovered | Raw byte error rate | Worst Codeword |
+|---|---|---|---|---|
+| 30% | 0% | 20 / 30 | 16.8% | 255 |
+| 0% | 2% | 30 / 30 | 0% | 0 |
+| 15% | 1% | 30 / 30 | 0% | 0 |
+| 40% | 2% | 0 / 30 | 85.5% | 255 |
+| 30% | 3% | 17 / 30 | 15.2% | 255 |
+
+- **Cause.** Hiss alone causes the failures, since wow alone at 2% gives no errors at all. The errors do not arrive as the isolated byte errors that the ideal-timing estimate above predicted (about 0.04% at 30% hiss). They arrive as runs of 15 to 1,068 consecutive wrong bytes that hit all 4 Codewords of an Interleave_Group almost equally. That pattern means the bit clock lost frame alignment and stayed misaligned for many frames, which Reed-Solomon and interleaving cannot repair.
+- **Consequence at the time.** Requirement 6.5 and Property 5 stayed limited to Standard_Mode, and fallback (b) awaited the project owner. The re-measurement below superseded this.
+
+#### D1 re-measurement (2026-11-13): PASSED
+
+- **Receiver changes** (receiver side only; the tape format, Modulator, Virtual_Tape_Channel, Reed-Solomon, and pass criterion are unchanged):
+  1. A 700 Hz to 3,500 Hz bandpass pre-filter at 2,400 baud ("Turbo pre-filter" above).
+  2. A byte clock in place of the per-frame start-bit search ("Byte clock" above), at both rates.
+  3. The detector upgrade (option c) was not needed and was not made.
+- **Diagnosis first.** At 30% hiss and 0% wow over 10 Bodies, the old receiver had 3.4% raw byte errors, while the same receiver with its clock correction turned off (pure flywheel, exact timing because there is no wow) had 0.2%. The per-frame start-bit search, not the bit decisions, caused most errors.
+- **Reproduce** (PowerShell, about 25 s each):
+  - `$env:BAUDVAULT_TURBO_MEASUREMENT = '1'; npx vitest run src/channel/turbo-measurement.test.ts`
+  - `$env:BAUDVAULT_TURBO_SEED = '0x5eedd1b2'`, then the same command, for the second master seed. The margin points use master seed + 1.
+- **Results at 30% hiss and 2% wow, 60 Bodies** (fixed 2,400 baud and auto-detect gave the same counts in every run):
+
+| Step | Master seed | Recovered | Raw byte error rate | Worst Codeword |
+|---|---|---|---|---|
+| Baseline (old receiver) | 0x7E5B2400 | 44 / 60 | 10.88% | 255 |
+| Pre-filter only (old clock) | 0x7E5B2400 | 48 / 60 | 10.21% | 255 |
+| Byte clock only (no pre-filter) | 0x7E5B2400 | 60 / 60 | 0.200% | 5 |
+| Both (final) | 0x7E5B2400 | 60 / 60 | 0.143% | 5 |
+| Both (final) | 0x5EEDD1B2 | 60 / 60 | 0.132% | 4 |
+
+- **Margin points** (30 Bodies each, recovered / raw byte error rate / worst Codeword against the 16-error limit):
+
+| Hiss | Wow | Baseline | Pre-filter only | Byte clock only | Final, seed 0x7E5B2401 | Final, seed 0x5EEDD1B3 |
+|---|---|---|---|---|---|---|
+| 30% | 0% | 20 / 16.8% / 255 | 25 / 11.2% / 255 | 30 / 0.173% / 3 | 30 / 0.097% / 2 | 30 / 0.095% / 3 |
+| 0% | 2% | 30 / 0% / 0 | 30 / 0% / 0 | 30 / 0% / 0 | 30 / 0% / 0 | 30 / 0% / 0 |
+| 15% | 1% | 30 / 0% / 0 | 30 / 0.002% / 1 | 30 / 0% / 0 | 30 / 0% / 0 | 30 / 0% / 0 |
+| 40% | 2% | 0 / 85.5% / 255 | 5 / 43.9% / 255 | 11 / 65.2% / 255 | 30 / 0.840% / 10 | 30 / 0.843% / 8 |
+| 30% | 3% | 17 / 15.2% / 255 | 19 / 25.6% / 255 | 30 / 0.253% / 3 | 30 / 0.195% / 3 | 30 / 0.199% / 4 |
+
+- **Which change mattered.** The byte clock alone meets the criterion. The pre-filter alone does little at 30% hiss, but with the byte clock it turns 40% hiss from 11 of 30 into 30 of 30 (without it, Carrier_Lock and the first start edge fail at that level) and lowers the raw error rate at 30% hiss by about a third.
+- **Maximum Body.** Four 16,384-byte Turbo Bodies (91.8 s of audio each) at 30% hiss and 2% wow all decoded, with 29 to 32 corrected bytes each. Not part of the gated suite.
+- **Speed** (`demodulateBytes` on clean audio, best of 5 on the development machine): 300 baud about 400 to 460 times real time (before: about 480), 2,400 baud about 400 times real time (before: about 450). The design target is about 200 times at 300 baud.
+- **Consequence.** Requirement 6.5 and Property 5 now cover Turbo_Mode. The always-on regression in `turbo-measurement.test.ts` now checks three Bodies at 30% hiss and 2% wow.
 
 ### D2: PBKDF2 iteration count
 

@@ -1,8 +1,11 @@
 // Bit demodulator: turns KCS audio into bytes (design.md, "Goertzel and bit
 // demodulator"; Requirements 5.2 and 5.7).
 //
-// Per sample, a SlidingGoertzel gives the decision signal d[n] in [−1, 1]
-// (positive = mark). On top of d the demodulator runs three states:
+// At 2,400 baud the input first passes a 700 Hz to 3,500 Hz bandpass (two
+// 2nd-order Butterworth biquads) that removes out-of-band hiss. 300 baud needs
+// no pre-filter. Per sample, a SlidingGoertzel then gives the decision signal
+// d[n] in [−1, 1] (positive = mark). On top of d the demodulator runs three
+// states:
 //
 // - Search: wait for Carrier_Lock, which needs d above the lock threshold
 //   (0.5 at 300 baud, 0 at 2,400 baud) and total energy above the −40 dBFS
@@ -11,21 +14,33 @@
 //   is one bit long, so the crossing lags the edge by about half a bit:
 //   t_edge = t_cross − W / 2. Accept it only if d < 0 at t_edge + T.
 // - Frame: decide bit i (0 start, 1–8 data LSB first, 9–10 stop) by the sign
-//   of d at t_edge + (i + 1) · T, emit the byte after bit 8, then search for the
-//   next start edge within ±0.5 T of t_edge + 11 · T. A found edge realigns
-//   the clock and nudges T by a quarter of the error, clamped to ±10% of
-//   nominal. A missing edge leaves t_edge at the expected point (flywheel), so
-//   exactly one byte is emitted per frame period while lock is held.
+//   of d at t_edge + (i + 1) · T and emit the byte. A byte clock then sets the
+//   next start edge to t_edge + 11 · T plus a bounded correction, so exactly
+//   one byte is emitted per frame period while lock is held, and no start-bit
+//   search happens after the first frame.
+//
+// Byte clock. Each frame gives a timing error from all of its bit transitions,
+// including stop → next start. The start (0) and stop (1, 1) bits are known,
+// the data bits are the decisions just made. At a transition between bit j − 1
+// and bit j, d at the mid-point of their decision points, t_edge + (j + ½)·T,
+// is about 0 when the clock is right and takes the old bit's sign when the
+// clock is early. The mean of these signed samples, times W and a loop gain,
+// is the correction, clamped per frame (CLOCK). Because d is bounded and the
+// correction is clamped well under half a bit, one noisy start or stop bit
+// moves the clock by a fraction of a bit and can never slip it by whole bits.
+// A second-order term moves T by `periodGain · correction / 11`, clamped to
+// ±10% of nominal, so T follows wow-and-flutter.
 //
 // Lock is lost after 22 bit periods with total energy below the floor, or when
 // the caller calls `release()`.
 //
 // Every decision depends only on the absolute sample index, so splitting the
 // input into chunks of any size gives the same events as one big push. The
-// per-sample loop allocates nothing; d is kept in a small ring buffer so events
-// can read positions slightly in the past.
+// per-sample loop allocates nothing; d is kept in a ring buffer so the frame
+// step can read the whole frame after it has passed.
 
 import { InputError } from '../core/errors'
+import { Biquad } from './biquad'
 import { checkBaud, checkSampleRate, ENERGY_FLOOR, SlidingGoertzel } from './goertzel'
 import { type BaudRate, BITS_PER_FRAME } from './kcs-modulator'
 
@@ -33,8 +48,26 @@ import { type BaudRate, BITS_PER_FRAME } from './kcs-modulator'
 export const LOCK_SECONDS = 0.5
 /** Bit periods of energy below the floor after which Carrier_Lock is lost. */
 export const UNLOCK_BITS = 22
-/** Fraction of the measured bit-period error applied at each realignment. */
-export const CLOCK_GAIN = 0.25
+/**
+ * Byte-clock loop constants per baud (measured, design.md "D1 re-measurement").
+ * - `gain`: correction in window lengths W per unit of mean signed mid-point d.
+ * - `periodGain`: share of each correction that also moves T (second order).
+ * - `maxStep`: largest correction per frame, as a fraction of a nominal bit.
+ *   At 2,400 baud, 0.16 bit is 2.9 samples at 44.1 kHz. The 2% wow model drifts
+ *   at most about 4 samples per frame at its 0.5 Hz peak, but the T loop takes
+ *   up the slow part, leaving about 0.8 samples per frame of 12 Hz flutter;
+ *   1.5 samples (0.08 bit) still passed at 2% but failed at 4% wow.
+ *   At 300 baud a frame lasts 1,617 samples and 2% wow drifts about 26 samples
+ *   per frame, so the clamp is 0.4 bit.
+ */
+export const CLOCK = {
+  300: { gain: 0.25, periodGain: 0.25, maxStep: 0.4 },
+  2400: { gain: 1.4, periodGain: 0.4, maxStep: 0.16 },
+} as const
+
+/** Bandpass edges of the 2,400-baud pre-filter in Hz. */
+export const TURBO_BAND_LOW_HZ = 700
+export const TURBO_BAND_HIGH_HZ = 3_500
 /** Largest allowed deviation of the bit-period estimate from nominal. */
 export const MAX_PERIOD_DEVIATION = 0.1
 
@@ -57,9 +90,6 @@ const HUNT = 1
 const FRAME = 2
 type State = typeof SEARCH | typeof HUNT | typeof FRAME
 
-/** Bit index of the "search for the next start edge" step in the Frame state. */
-const NEXT_EDGE = 9
-
 export class BitDemodulator {
   readonly sampleRate: number
   readonly baud: BaudRate
@@ -69,6 +99,12 @@ export class BitDemodulator {
   readonly energies: { mark: number; space: number } = { mark: 0, space: 0 }
 
   readonly #goertzel: SlidingGoertzel
+  /** 2,400-baud bandpass sections, or null at 300 baud. */
+  readonly #highPass: Biquad | null
+  readonly #lowPass: Biquad | null
+  readonly #clockGain: number
+  readonly #periodGain: number
+  readonly #maxStep: number
   readonly #nominalPeriod: number
   readonly #minPeriod: number
   readonly #maxPeriod: number
@@ -94,9 +130,6 @@ export class BitDemodulator {
   #candidate = 0
   /** First sample index at which the pending step can run; Infinity when none. */
   #readyAt = Infinity
-  /** Frame: next bit to sample (1–8), or NEXT_EDGE. */
-  #bit = 1
-  #byte = 0
 
   constructor(sampleRate: number, baud: BaudRate) {
     checkSampleRate(sampleRate)
@@ -106,6 +139,13 @@ export class BitDemodulator {
     this.#nominalPeriod = sampleRate / baud
     this.windowLength = Math.round(this.#nominalPeriod)
     this.#goertzel = new SlidingGoertzel(sampleRate, this.windowLength)
+    const turbo = baud === 2400
+    this.#highPass = turbo ? Biquad.highPass(sampleRate, TURBO_BAND_LOW_HZ) : null
+    this.#lowPass = turbo ? Biquad.lowPass(sampleRate, TURBO_BAND_HIGH_HZ) : null
+    const clock = CLOCK[baud]
+    this.#clockGain = clock.gain * this.windowLength
+    this.#periodGain = clock.periodGain
+    this.#maxStep = clock.maxStep * this.#nominalPeriod
     this.#minPeriod = this.#nominalPeriod * (1 - MAX_PERIOD_DEVIATION)
     this.#maxPeriod = this.#nominalPeriod * (1 + MAX_PERIOD_DEVIATION)
     this.#period = this.#nominalPeriod
@@ -113,9 +153,9 @@ export class BitDemodulator {
     this.#lockSamples = Math.round(LOCK_SECONDS * sampleRate)
     this.#unlockSamples = Math.round(UNLOCK_BITS * this.#nominalPeriod)
 
-    // Steps read d at most about two bit periods back; keep a generous margin.
+    // The frame step reads d up to 11 bit periods back; keep a margin.
     let size = 64
-    while (size < 8 * this.#maxPeriod + 64) size *= 2
+    while (size < 13 * this.#maxPeriod + 64) size *= 2
     this.#history = new Float64Array(size)
     this.#mask = size - 1
   }
@@ -165,6 +205,7 @@ export class BitDemodulator {
       let x = samples[i]!
       // Non-finite input would poison the sliding sums; treat it as silence.
       if (x - x !== 0) x = 0
+      if (this.#highPass !== null) x = this.#lowPass!.step(this.#highPass.step(x))
       const d = goertzel.step(x)
       const n = this.#n
       history[n & mask] = d
@@ -223,10 +264,9 @@ export class BitDemodulator {
     return a + (pos - i0) * (b - a)
   }
 
-  /** Schedules sampling of bit `bit` of the current frame. */
-  #scheduleBit(bit: number): void {
-    this.#bit = bit
-    this.#readyAt = Math.floor(this.#edge + (bit + 1) * this.#period) + 1
+  /** Schedules the frame step: it runs once the mid-point after the frame's last bit is in the history. */
+  #scheduleFrame(): void {
+    this.#readyAt = Math.floor(this.#edge + (BITS_PER_FRAME + 0.5) * this.#period) + 1
   }
 
   /** Runs the pending step. Called only when the current sample index has reached `#readyAt`. */
@@ -235,66 +275,47 @@ export class BitDemodulator {
       if (this.#dAt(this.#candidate + this.#period) < 0) {
         this.#state = FRAME
         this.#edge = this.#candidate
-        this.#byte = 0
-        this.#scheduleBit(1)
+        this.#scheduleFrame()
       } else {
         this.#readyAt = Infinity // noise spike: keep hunting
       }
       return
     }
 
-    const bit = this.#bit
-    if (bit <= 8) {
-      if (this.#dAt(this.#edge + (bit + 1) * this.#period) > 0) this.#byte |= 1 << (bit - 1)
-      if (bit < 8) {
-        this.#scheduleBit(bit + 1)
-      } else {
-        events.push({ type: 'byte', value: this.#byte, sample: n })
-        this.#bit = NEXT_EDGE
-        const center = this.#edge + BITS_PER_FRAME * this.#period + this.windowLength / 2
-        this.#readyAt = Math.floor(center + 0.5 * this.#period) + 1
-      }
-      return
-    }
-
-    // NEXT_EDGE: look for a mark-to-space crossing of d whose edge estimate is
-    // within ±0.5 T of the expected start edge; take the one closest to it.
+    // FRAME: decide data bits 1–8, then run the byte clock.
     const period = this.#period
-    const expected = this.#edge + BITS_PER_FRAME * period
-    const center = expected + this.windowLength / 2
-    const lo = center - 0.5 * period
-    const hi = center + 0.5 * period
-    const history = this.#history
-    const mask = this.#mask
-    let best = NaN
-    let bestDistance = Infinity
-    const last = Math.floor(hi) + 1
-    for (let m = Math.floor(lo) + 1; m <= last; m++) {
-      const a = history[(m - 1) & mask]!
-      const b = history[m & mask]!
-      if (a >= 0 && b < 0) {
-        const cross = m - 1 + a / (a - b)
-        const distance = Math.abs(cross - center)
-        if (cross >= lo && cross <= hi && distance < bestDistance) {
-          best = cross
-          bestDistance = distance
-        }
-      }
+    const edge = this.#edge
+    let byte = 0
+    for (let bit = 1; bit <= 8; bit++) {
+      if (this.#dAt(edge + (bit + 1) * period) > 0) byte |= 1 << (bit - 1)
     }
+    events.push({ type: 'byte', value: byte, sample: n })
 
-    if (bestDistance === Infinity) {
-      this.#edge = expected // flywheel: keep the byte count exact
-    } else {
-      const edge = best - this.windowLength / 2
-      const measured = (edge - this.#edge) / BITS_PER_FRAME
-      let next = period + CLOCK_GAIN * (measured - period)
-      if (next < this.#minPeriod) next = this.#minPeriod
-      else if (next > this.#maxPeriod) next = this.#maxPeriod
-      this.#period = next
-      this.#edge = edge
+    // Byte clock: signed d at the mid-point of every transition (see top).
+    let ted = 0
+    let transitions = 0
+    let prev = 0 // bit 0, the start bit
+    for (let j = 1; j <= BITS_PER_FRAME; j++) {
+      const cur = j <= 8 ? (byte >> (j - 1)) & 1 : j < BITS_PER_FRAME ? 1 : 0
+      if (cur !== prev) {
+        const mid = this.#dAt(edge + (j + 0.5) * period)
+        ted += prev === 1 ? mid : -mid
+        transitions++
+      }
+      prev = cur
     }
-    this.#byte = 0
-    this.#scheduleBit(1)
+    // Every frame has at least two transitions: start → first 1, and stop → next start.
+    const lim = this.#maxStep
+    let corr = (this.#clockGain * ted) / transitions
+    if (corr > lim) corr = lim
+    else if (corr < -lim) corr = -lim
+
+    let next = period + (this.#periodGain * corr) / BITS_PER_FRAME
+    if (next < this.#minPeriod) next = this.#minPeriod
+    else if (next > this.#maxPeriod) next = this.#maxPeriod
+    this.#period = next
+    this.#edge = edge + BITS_PER_FRAME * period + corr
+    this.#scheduleFrame()
   }
 }
 

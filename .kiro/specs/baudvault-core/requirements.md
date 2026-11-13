@@ -122,7 +122,7 @@ Scope: this spec covers the core BaudVault web application. The Tape Librarian K
 2. WHILE the Virtual_Tape_Channel is enabled, WHEN the user selects Play on a tape, THE BaudVault SHALL pass that tape's audio through the Virtual_Tape_Channel, play the processed audio, and send the processed audio to the Tape_Decoder.
 3. WHEN the Virtual_Tape_Channel processes audio, THE Virtual_Tape_Channel SHALL apply a 300 Hz to 5,000 Hz bandpass filter, resample with a time-varying speed whose peak deviation equals Wow_Level, and add white noise whose RMS equals Hiss_Level multiplied by the Nominal_Carrier_RMS.
 4. WHEN the Virtual_Tape_Channel processes the same samples with the same settings and seed, THE Virtual_Tape_Channel SHALL produce identical output.
-5. WHILE Standard_Mode is selected, Hiss_Level is at most 30%, and Wow_Level is at most 2%, THE BaudVault SHALL recover byte for byte every Body that passed through the Virtual_Tape_Channel, for any seed and any Plaintext of 1 to 15,360 bytes, and unlock the secret with the sealing Password.
+5. WHILE Standard_Mode or Turbo_Mode is selected, Hiss_Level is at most 30%, and Wow_Level is at most 2%, THE BaudVault SHALL recover byte for byte every Body that passed through the Virtual_Tape_Channel, for any seed and any Plaintext of 1 to 15,360 bytes, and unlock the secret with the sealing Password.
 6. WHEN the user imports a WAV file, THE BaudVault SHALL send the file's audio to the Tape_Decoder without Virtual_Tape_Channel processing, whether or not the Virtual_Tape_Channel is enabled.
 
 ### Requirement 7: Retro Deck Interface and Telemetry

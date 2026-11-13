@@ -98,21 +98,21 @@ The plan follows the four waves in `tickets&specs.md`. Each top-level task is on
     - Show that the 300-baud demodulator processes audio at least 200 times faster than real time
     - _Requirements: 5.2_
 
-- [ ] 7. BV-07 Virtual Tape Channel
+- [x] 7. BV-07 Virtual Tape Channel
   - _Wave 3, depends on 5, 6_
-  - [ ] 7.1 Implement `src/channel/prng.ts`, `src/channel/biquad.ts`, and `src/channel/virtual-tape.ts`
+  - [x] 7.1 Implement `src/channel/prng.ts`, `src/channel/biquad.ts`, and `src/channel/virtual-tape.ts`
     - _Requirements: 6.3, 6.4_
-  - [ ] 7.2 Write automated tests for the channel
+  - [x] 7.2 Write automated tests for the channel
     - Channel determinism for the same seed; Standard_Mode recovery at 30% hiss and 2% wow across random seeds
     - _Requirements: 6.4, 6.5_
-  - [ ] 7.3 Write a Turbo_Mode measurement test and record decision D1
+  - [x] 7.3 Write a Turbo_Mode measurement test and record decision D1
     - Run at 30% hiss and 2% wow over at least 50 random Bodies and seeds and report pass or fail
     - Record the result under decision D1 in `design.md`
     - _Requirements: 6.5_
 
 - [ ] 8. BV-08 CRT oscilloscope UI and virtual cassette deck
   - _Wave 3, depends on 4, 6, 7_
-  - [ ] 8.1 Implement `src/audio/playback.ts`, `src/audio/microphone.ts`, and `src/audio/mic-worklet.ts`
+  - [x] 8.1 Implement `src/audio/playback.ts`, `src/audio/microphone.ts`, and `src/audio/mic-worklet.ts`
     - Stop releases every `MediaStreamTrack`
     - Play with the Virtual_Tape_Channel on is processed; imports and exports are not
     - _Requirements: 4.6, 5.6, 5.8, 6.2, 6.6, 7.21_
@@ -135,7 +135,7 @@ The plan follows the four waves in `tickets&specs.md`. Each top-level task is on
 
 - [ ] 9. BV-09 fast-check property suite
   - _Wave 3, depends on 4, 5, 6, 7_
-  - [ ] 9.1 Add `test/no-network.setup.ts` (outside `src/`) and register it in `vite.config.ts`
+  - [x] 9.1 Add `test/no-network.setup.ts` (outside `src/`) and register it in `vite.config.ts`
     - _Requirements: 8.1_
   - [ ] 9.2 Confirm that the P1 to P4 suites from tasks 4 and 5 live in `src/properties/` and run 200 times each
   - [ ] 9.3 Write property test for the acoustic round trip
@@ -161,7 +161,7 @@ The plan follows the four waves in `tickets&specs.md`. Each top-level task is on
 
 ## Notes
 
-- Decisions: D2 is settled (600,000 iterations, task 4.3). D1 is settled except for its measurement in task 7.3, which either extends Requirement 6.5 and Property 5 to Turbo_Mode or triggers the 1,200-baud fallback listed in `design.md`.
+- Decisions: D2 is settled (600,000 iterations, task 4.3). D1 is resolved at 2,400 baud: task 7.3's first measurement failed (44 of 60 Bodies at 30% hiss and 2% wow), and after the receiver changes (Turbo bandpass pre-filter and byte clock) the re-measurement recovered 60 of 60 on two master seeds (see "D1 re-measurement" in `design.md`). Requirement 6.5 and Property 5 now cover Turbo_Mode too, and the 1,200-baud fallback is not needed.
 - Manual checks, not run by the agent: phone-to-laptop playback in Standard_Mode with a desk tap (BV-08); offline reload and phone-to-laptop recovery on the deployed site, and the live response headers (BV-11); the browser matrix in Requirement 10.1.
 - Out of this spec: BV-10 Tape Librarian lives in its own repository and reuses `src/fec`, `src/tape/framer.ts`, and `src/modem`. BV-12 demo video and Devpost package are delivery work. Both are tracked in `tickets&specs.md`.
 

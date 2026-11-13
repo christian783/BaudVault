@@ -12,6 +12,9 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
+    // Replaces every network API with a stub that throws (Requirement 8.1).
+    // Projects inherit it through `extends: true`.
+    setupFiles: ['./test/no-network.setup.ts'],
     // Engine tickets (BV-04 to BV-07) add the first real suites.
     passWithNoTests: true,
     projects: [

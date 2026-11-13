@@ -363,6 +363,73 @@
         "chatSessionId": "sess_20999637-8122-4e47-b66b-638e123f9398",
         "timestamp": 1794578001174
       }
+    ],
+    "7.1 Implement `src/channel/prng.ts`, `src/channel/biquad.ts`, and `src/channel/virtual-tape.ts`": [
+      {
+        "executionId": "dcdebcfe-b43b-48a7-b3f3-04deaf30128f",
+        "chatSessionId": "sess_37f53dac-0c7c-49b8-8022-0f9fdc0bbdb6",
+        "timestamp": 1794578508262
+      },
+      {
+        "executionId": "dcdebcfe-b43b-48a7-b3f3-04deaf30128f",
+        "chatSessionId": "sess_37f53dac-0c7c-49b8-8022-0f9fdc0bbdb6",
+        "timestamp": 1794580191354
+      }
+    ],
+    "7.2 Write automated tests for the channel": [
+      {
+        "executionId": "dcdebcfe-b43b-48a7-b3f3-04deaf30128f",
+        "chatSessionId": "sess_37f53dac-0c7c-49b8-8022-0f9fdc0bbdb6",
+        "timestamp": 1794580196049
+      },
+      {
+        "executionId": "dcdebcfe-b43b-48a7-b3f3-04deaf30128f",
+        "chatSessionId": "sess_37f53dac-0c7c-49b8-8022-0f9fdc0bbdb6",
+        "timestamp": 1794582089519
+      }
+    ],
+    "7.3 Write a Turbo_Mode measurement test and record decision D1": [
+      {
+        "executionId": "dcdebcfe-b43b-48a7-b3f3-04deaf30128f",
+        "chatSessionId": "sess_37f53dac-0c7c-49b8-8022-0f9fdc0bbdb6",
+        "timestamp": 1794580196381
+      },
+      {
+        "executionId": "dcdebcfe-b43b-48a7-b3f3-04deaf30128f",
+        "chatSessionId": "sess_37f53dac-0c7c-49b8-8022-0f9fdc0bbdb6",
+        "timestamp": 1794582089694
+      }
+    ],
+    "7. BV-07 Virtual Tape Channel": [
+      {
+        "executionId": "dcdebcfe-b43b-48a7-b3f3-04deaf30128f",
+        "chatSessionId": "sess_37f53dac-0c7c-49b8-8022-0f9fdc0bbdb6",
+        "timestamp": 1794582089832
+      }
+    ],
+    "8.1 Implement `src/audio/playback.ts`, `src/audio/microphone.ts`, and `src/audio/mic-worklet.ts`": [
+      {
+        "executionId": "df079441-2551-4fe8-be36-4155be8b3bc8",
+        "chatSessionId": "sess_37f53dac-0c7c-49b8-8022-0f9fdc0bbdb6",
+        "timestamp": 1794590861138
+      },
+      {
+        "executionId": "df079441-2551-4fe8-be36-4155be8b3bc8",
+        "chatSessionId": "sess_37f53dac-0c7c-49b8-8022-0f9fdc0bbdb6",
+        "timestamp": 1794591389012
+      }
+    ],
+    "9.1 Add `test/no-network.setup.ts` (outside `src/`) and register it in `vite.config.ts`": [
+      {
+        "executionId": "df079441-2551-4fe8-be36-4155be8b3bc8",
+        "chatSessionId": "sess_37f53dac-0c7c-49b8-8022-0f9fdc0bbdb6",
+        "timestamp": 1794590861998
+      },
+      {
+        "executionId": "df079441-2551-4fe8-be36-4155be8b3bc8",
+        "chatSessionId": "sess_37f53dac-0c7c-49b8-8022-0f9fdc0bbdb6",
+        "timestamp": 1794591390104
+      }
     ]
   }
 }
