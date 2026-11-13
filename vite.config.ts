@@ -5,6 +5,11 @@ import { defineConfig } from 'vitest/config'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  build: {
+    // The modulepreload polyfill adds a network request to the bundle. Every
+    // supported browser preloads modules natively (Requirement 8.7).
+    modulePreload: { polyfill: false },
+  },
   test: {
     include: ['src/**/*.{test,spec}.ts', 'src/**/*.{test,spec}.tsx'],
     environment: 'node',
