@@ -133,15 +133,15 @@ The plan follows the four waves in `tickets&specs.md`. Each top-level task is on
     - Password length rule, error message mapping, feature detection, Shard grouping by set ID
     - _Requirements: 7.9, 7.25, 7.26, 7.28, 10.2, 10.3_
 
-- [ ] 9. BV-09 fast-check property suite
+- [x] 9. BV-09 fast-check property suite
   - _Wave 3, depends on 4, 5, 6, 7_
   - [x] 9.1 Add `test/no-network.setup.ts` (outside `src/`) and register it in `vite.config.ts`
     - _Requirements: 8.1_
-  - [ ] 9.2 Confirm that the P1 to P4 suites from tasks 4 and 5 live in `src/properties/` and run 200 times each
-  - [ ] 9.3 Write property test for the acoustic round trip
+  - [x] 9.2 Confirm that the P1 to P4 suites from tasks 4 and 5 live in `src/properties/` and run 200 times each
+  - [x] 9.3 Write property test for the acoustic round trip
     - **Property 5: Acoustic round trip**
     - **Validates: Requirements 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.7, 6.3, 6.5**
-  - [ ] 9.4 Run `npm test` and optimize until it finishes in under 15 seconds with zero counterexamples
+  - [x] 9.4 Run `npm test` and optimize until it finishes in under 15 seconds with zero counterexamples
 
 - [ ] 10. Checkpoint: all tests pass, build has zero warnings, `npm run airgap` and `npm run airgap:dist` pass
   - Ensure all tests pass, ask the user if questions arise.

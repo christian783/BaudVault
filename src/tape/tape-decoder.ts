@@ -104,10 +104,20 @@ export class ScopeTap {
   write(input: Float32Array, decision: Float32Array, count: number): void {
     const size = this.size
     let head = this.#head
-    for (let i = 0; i < count; i++) {
-      this.input[head] = input[i]!
-      this.decision[head] = decision[i]!
-      head = head + 1 === size ? 0 : head + 1
+    // Samples older than the last `size` would be overwritten within this call; skip them.
+    let from = 0
+    if (count > size) {
+      from = count - size
+      head = (head + from) % size
+    }
+    // Block copies up to the ring's end, then wrap; same contents and head as one sample at a time.
+    while (from < count) {
+      const n = Math.min(size - head, count - from)
+      this.input.set(input.subarray(from, from + n), head)
+      this.decision.set(decision.subarray(from, from + n), head)
+      from += n
+      head += n
+      if (head === size) head = 0
     }
     this.#head = head
   }

@@ -10,7 +10,7 @@
     "airgap:dist": "node scripts/airgap-scan.mjs --dist",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test": "npm run airgap && vitest run",
+    "test": "node scripts/airgap-scan.mjs && vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc -b"
   },
