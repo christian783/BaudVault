@@ -11,6 +11,8 @@ Scope: this spec covers the core BaudVault web application. The Tape Librarian K
 - **BaudVault**: The complete web application described by this spec.
 - **Plaintext**: The secret bytes the user wants to protect. Text secrets are encoded as UTF-8.
 - **Password**: The user-supplied string from which the encryption key is derived.
+- **Lock Password**: The Password typed in the Deck_UI Record panel. It is used only to seal a Plaintext.
+- **Unlock password**: The Password typed in the Deck_UI Vault section while an Envelope is held. It is used only to open that Envelope.
 - **Vault_Engine**: The module that compresses, encrypts, decrypts, and decompresses Plaintext.
 - **Envelope**: The encrypted output of the Vault_Engine in the v1 layout defined in `design.md`.
 - **Shard_Codec**: The module that splits an Envelope into Shards and combines Shards back into an Envelope.
@@ -131,7 +133,7 @@ Scope: this spec covers the core BaudVault web application. The Tape Librarian K
 
 #### Acceptance Criteria
 
-1. THE Deck_UI SHALL provide a text input for the secret and a masked input for the Password.
+1. THE Deck_UI SHALL provide, in the Record panel, a text input for the secret and a masked Lock Password input.
 2. THE Deck_UI SHALL draw a two-trace oscilloscope on an HTML canvas, where trace A shows the most recent 20 ms of audio and trace B shows the Tape_Decoder's mark-minus-space energy signal over the same 20 ms.
 3. THE Deck_UI SHALL show one bar for the current 1,200 Hz Goertzel energy and one bar for the current 2,400 Hz Goertzel energy.
 4. WHILE audio is playing or the microphone is listening, THE Deck_UI SHALL redraw the oscilloscope and energy bars once per animation frame, up to 60 frames per second.
@@ -143,7 +145,7 @@ Scope: this spec covers the core BaudVault web application. The Tape Librarian K
 10. WHILE audio is playing or the microphone is listening and the operating system does not request reduced motion, THE Deck_UI SHALL rotate the cassette reels.
 11. WHILE the operating system requests reduced motion, THE Deck_UI SHALL NOT animate the cassette reels.
 12. WHEN the vault unlocks, THE Deck_UI SHALL display the recovered secret masked until the user selects Reveal.
-13. WHEN the user selects Clear, THE Deck_UI SHALL remove the Plaintext, Password, and Envelopes from application state and overwrite Plaintext byte arrays with zeros.
+13. WHEN the user selects Clear, THE Deck_UI SHALL remove the Plaintext, the Lock Password, the Unlock password, and Envelopes from application state and overwrite Plaintext byte arrays with zeros.
 14. THE Deck_UI SHALL let the user choose Standard_Mode or Turbo_Mode before locking.
 15. THE Deck_UI SHALL let the user choose no sharding, 2-of-3, or 3-of-5 before locking.
 16. WHEN the user selects Lock, THE Deck_UI SHALL seal the secret, split the Envelope if sharding is chosen, and show one tape for each resulting Body.
@@ -153,12 +155,13 @@ Scope: this spec covers the core BaudVault web application. The Tape Librarian K
 20. WHEN the user selects Listen, THE Deck_UI SHALL start microphone capture as defined in Requirement 5.6.
 21. WHEN the user selects Stop while the microphone is listening, THE Deck_UI SHALL stop microphone capture and release the microphone.
 22. THE Deck_UI SHALL provide a control that enables and disables the Virtual_Tape_Channel.
-23. WHILE an Envelope that was decoded or rebuilt from K Shards is held, WHEN the user selects Unlock, THE Deck_UI SHALL open the Envelope with the entered Password.
-24. IF opening an Envelope fails with an AuthenticationError, THEN THE Deck_UI SHALL show "Wrong password or damaged tape", clear the Password field, and keep the Envelope for another attempt.
-25. WHILE the Password contains fewer than 12 Unicode code points after NFC normalization, THE Deck_UI SHALL show a warning that a short password can be guessed offline by anyone who records the tape.
-26. WHILE the Password contains 1 to 11 Unicode code points after NFC normalization, THE Deck_UI SHALL NOT disable Lock because of the Password's length.
+23. WHILE an Envelope that was decoded or rebuilt from K Shards is held, WHEN the user selects Unlock, THE Deck_UI SHALL open the Envelope with the entered Unlock password.
+24. IF opening an Envelope fails with an AuthenticationError, THEN THE Deck_UI SHALL show "Wrong password or damaged tape", clear the Unlock password field, and keep the Envelope for another attempt.
+25. WHILE the Lock Password contains fewer than 12 Unicode code points after NFC normalization, THE Deck_UI SHALL show a warning that a short password can be guessed offline by anyone who records the tape.
+26. WHILE the Lock Password contains 1 to 11 Unicode code points after NFC normalization, THE Deck_UI SHALL NOT disable Lock because of the Lock Password's length.
 27. WHILE a seal or open operation is running, THE Deck_UI SHALL show a busy indicator and disable Lock and Unlock.
 28. IF decoding a WAV file or combining Shards fails with a FormatError, UncorrectableError, IntegrityError, or ShardError, THEN THE Deck_UI SHALL show a message naming the failure type and keep every Body decoded before the failure.
+29. WHILE an Envelope that was decoded or rebuilt from K Shards is held, THE Deck_UI SHALL show a masked Unlock password field, separate from the Lock Password input, and WHILE no Envelope is held, THE Deck_UI SHALL NOT show it.
 
 ### Requirement 8: Air Gap and Offline Operation
 
@@ -169,7 +172,7 @@ Scope: this spec covers the core BaudVault web application. The Tape Librarian K
 1. THE BaudVault source files under `src/` SHALL NOT contain the text `fetch`, `XMLHttpRequest`, `WebSocket`, `EventSource`, `sendBeacon`, or `RTCPeerConnection` anywhere, including in comments, strings, test files, and longer identifiers that contain one of these words.
 2. THE BaudVault SHALL load every script, stylesheet, font, and image from its own origin.
 3. WHEN the BaudVault has been loaded once, THE BaudVault SHALL perform every function in Requirements 1 to 7 while the browser is offline, including after the page is reloaded or opened in a new tab while offline.
-4. THE BaudVault SHALL NOT write Plaintext, Passwords, derived keys, or decrypted bytes, including decrypted bytes that have not yet been decompressed, to the console, `localStorage`, `sessionStorage`, IndexedDB, cookies, or the page URL.
+4. THE BaudVault SHALL NOT write Plaintext, Passwords (the Lock Password and the Unlock password), derived keys, or decrypted bytes, including decrypted bytes that have not yet been decompressed, to the console, `localStorage`, `sessionStorage`, IndexedDB, cookies, or the page URL.
 5. THE BaudVault SHALL take every salt, IV, Shard set ID, and Shamir coefficient from `crypto.getRandomValues`.
 6. WHERE the BaudVault is served from the production deployment, THE BaudVault SHALL serve every HTML response with a Content-Security-Policy header that includes `connect-src 'none'`.
 7. THE BaudVault production build SHALL contain no call to `fetch`, `XMLHttpRequest`, `WebSocket`, `EventSource`, `navigator.sendBeacon`, or `RTCPeerConnection` in any emitted JavaScript file other than the offline service worker script, as detected by the call patterns defined in `design.md`.
@@ -188,7 +191,7 @@ Scope: this spec covers the core BaudVault web application. The Tape Librarian K
 4. WHEN Carrier_Lock is gained or lost, THE Deck_UI SHALL announce the change through a polite live region.
 5. WHEN a Tape_Record finishes decoding, an error is shown, or the vault unlocks, THE Deck_UI SHALL announce the result through a polite live region.
 6. THE Deck_UI SHALL show Carrier_Lock state, decode progress, and corrected-byte counts as text outside the oscilloscope canvas, and SHALL NOT convey any state by color alone.
-7. THE Deck_UI SHALL NOT include the Plaintext or the Password in any live-region announcement.
+7. THE Deck_UI SHALL NOT include the Plaintext, the Lock Password, or the Unlock password in any live-region announcement.
 8. WHILE the recovered secret is masked, THE Deck_UI SHALL expose only the masked form of the secret to assistive technology.
 
 ### Requirement 10: Browser Support

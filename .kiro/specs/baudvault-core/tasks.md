@@ -159,10 +159,22 @@ The plan follows the four waves in `tickets&specs.md`. Each top-level task is on
     - Assert `connect-src 'none'` on `/` and `/index.html`, `default-src 'self'` on the service worker path, and no `/*` CSP rule
     - _Requirements: 8.6, 8.8_
 
+- [x] 12. BV-13 Separate Unlock password field
+  - _Depends on 8_
+  - [x] 12.1 Add the Unlock password field to the Vault section
+    - Separate state in `App.tsx` used by `handleUnlock` and `unlockReadiness`; field shown only while an Envelope is held; Enter triggers Unlock; Clear and `AuthenticationError` clear it
+    - Remove the "Unlock uses the password entered in the Record panel" hint, update the file comments in `RecordPanel.tsx` and `UnlockSection.tsx`, and update the announcement text for the cleared field if it names the field
+    - _Requirements: 7.1, 7.13, 7.23, 7.24, 7.29, 1.9, 8.4, 9.7_
+  - [x] 12.2 Write tests for the Unlock password field
+    - Hidden with no Envelope, shown when one is held, Unlock reads it and not the Lock Password, cleared after `AuthenticationError` and by Clear, no short-password warning on it
+    - Follow the UI test approach the repo already uses for `src/ui`
+    - _Requirements: 7.23, 7.24, 7.29_
+  - [x] 12.3 Checkpoint: `npm test`, `npm run lint`, and `npm run build` with zero warnings, and `npm run airgap` pass
+
 ## Notes
 
 - Decisions: D2 is settled (600,000 iterations, task 4.3). D1 is resolved at 2,400 baud: task 7.3's first measurement failed (44 of 60 Bodies at 30% hiss and 2% wow), and after the receiver changes (Turbo bandpass pre-filter and byte clock) the re-measurement recovered 60 of 60 on two master seeds (see "D1 re-measurement" in `design.md`). Requirement 6.5 and Property 5 now cover Turbo_Mode too, and the 1,200-baud fallback is not needed.
-- Manual checks, not run by the agent: phone-to-laptop playback in Standard_Mode with a desk tap (BV-08); offline reload and phone-to-laptop recovery on the deployed site, and the live response headers (BV-11); the browser matrix in Requirement 10.1.
+- Manual checks, not run by the agent: phone-to-laptop playback in Standard_Mode with a desk tap (BV-08); offline reload and phone-to-laptop recovery on the deployed site, and the live response headers (BV-11); the browser matrix in Requirement 10.1; after BV-13, a quick check in the browser that the Unlock password field is hidden at start, appears after importing a WAV, and is emptied by Clear.
 - Out of this spec: BV-10 Tape Librarian lives in its own repository and reuses `src/fec`, `src/tape/framer.ts`, and `src/modem`. BV-12 demo video and Devpost package are delivery work. Both are tracked in `tickets&specs.md`.
 
 ## Task Dependency Graph
@@ -186,7 +198,10 @@ The plan follows the four waves in `tickets&specs.md`. Each top-level task is on
     { "id": 13, "tasks": ["8.7"] },
     { "id": 14, "tasks": ["9.4"] },
     { "id": 15, "tasks": ["11.1", "11.2"] },
-    { "id": 16, "tasks": ["11.3"] }
+    { "id": 16, "tasks": ["11.3"] },
+    { "id": 17, "tasks": ["12.1"] },
+    { "id": 18, "tasks": ["12.2"] },
+    { "id": 19, "tasks": ["12.3"] }
   ]
 }
 ```

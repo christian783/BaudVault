@@ -23,7 +23,7 @@ export type UnlockReadiness = {
 
 /**
  * Whether Unlock is enabled: an Envelope is held, no seal or open is running
- * (Requirement 7.27), and the Password is non-empty without U+0000, which the
+ * (Requirement 7.27), and the Unlock password is non-empty without U+0000, which the
  * Vault_Engine would reject (Requirement 1.9). `unavailable` is
  * `FeatureSupport.unlockProblem`: when the browser lacks a feature opening
  * needs, Unlock is disabled with that message, even before an Envelope is
@@ -38,13 +38,13 @@ export function unlockReadiness(
   if (unavailable !== null) return { ready: false, problem: unavailable }
   if (!hasEnvelope) return { ready: false, problem: null }
   if (hasNullCharacter(password)) return { ready: false, problem: NULL_CHARACTER_MESSAGE }
-  if (password.length === 0) return { ready: false, problem: 'Enter the password in the Record panel to unlock.' }
+  if (password.length === 0) return { ready: false, problem: 'Enter the unlock password to unlock.' }
   return { ready: !busy, problem: null }
 }
 
 export type UnlockFailure = {
   message: string
-  /** Clear the Password field: only after an AuthenticationError (Requirement 7.24). */
+  /** Clear the Unlock password field: only after an AuthenticationError (Requirement 7.24). */
   clearPassword: boolean
 }
 

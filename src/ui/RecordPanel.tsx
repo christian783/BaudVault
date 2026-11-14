@@ -1,11 +1,11 @@
-// Record panel: secret, Password, mode, sharding, and Lock (design.md,
-// "Controls" and "Password warning"; Requirements 7.1, 7.14, 7.15, 7.16,
-// 7.25, 7.26, 7.27). The same Password field is used by Unlock in the
-// Readout panel.
+// Record panel: secret, Lock Password, mode, sharding, and Lock (design.md,
+// "Controls" and "Lock Password warning"; Requirements 7.1, 7.14, 7.15,
+// 7.16, 7.25, 7.26, 7.27). The Lock Password is used only to seal. Unlock
+// reads its own Unlock password field in the Vault section.
 //
 // The secret field turns off spell checking, autocorrect, and autocomplete:
 // some browsers send spell-check text to a remote service, and autocomplete
-// would store the secret. The Password field is `type="password"` with
+// would store the secret. The Lock Password field is `type="password"` with
 // autocomplete off so the browser does not offer to save it.
 
 import { useId } from 'react'
@@ -72,7 +72,7 @@ export function RecordPanel(props: RecordPanelProps) {
       </div>
 
       <div className="field">
-        <label htmlFor={ids.password}>Password</label>
+        <label htmlFor={ids.password}>Lock password</label>
         <input
           id={ids.password}
           className="control"

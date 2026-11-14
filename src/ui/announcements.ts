@@ -4,7 +4,7 @@
 // The region announces Carrier_Lock gained and lost, decode results (the
 // Receiver notices, which carry the corrected-byte counts), errors shown in
 // the panels, tapes recorded, the vault unlocked, and Clear. No event type
-// carries the Plaintext or the Password: errors become text through
+// carries the Plaintext or either Password: errors become text through
 // `errorText`, whose details are fixed literals and safe numbers, and
 // `unlocked` carries no data at all, so the recovered secret can never reach
 // an announcement.
@@ -32,7 +32,7 @@ export type AppEvent =
   | { type: 'cleared' }
 
 export const UNLOCKED_ANNOUNCEMENT = 'Vault unlocked. The recovered secret is masked; select Reveal to show it.'
-export const CLEARED_ANNOUNCEMENT = 'Cleared the secret, the password, the tapes, and every decoded tape.'
+export const CLEARED_ANNOUNCEMENT = 'Cleared the secret, both passwords, the tapes, and every decoded tape.'
 
 /** Ends `text` with a period unless it already ends with punctuation. */
 function sentence(text: string): string {
@@ -55,7 +55,7 @@ export function announcementText(event: AppEvent): string | null {
     case 'unlock-failed': {
       const failure = unlockFailure(event.error)
       const text = sentence(`Unlock failed: ${failure.message}`)
-      return failure.clearPassword ? `${text} The password field was cleared.` : text
+      return failure.clearPassword ? `${text} The unlock password field was cleared.` : text
     }
     case 'deck-message':
       return sentence(event.message)

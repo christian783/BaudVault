@@ -33,7 +33,7 @@ describe('announcementText (Requirements 9.4, 9.5)', () => {
       'Unlock failed: Too much damage to repair: codeword 2 failed.',
     )
     expect(announcementText({ type: 'unlock-failed', error: new AuthenticationError() })).toBe(
-      'Unlock failed: Wrong password or damaged tape. The password field was cleared.',
+      'Unlock failed: Wrong password or damaged tape. The unlock password field was cleared.',
     )
     expect(announcementText({ type: 'deck-message', message: MIC_FAILURE_MESSAGES.denied })).toBe(
       'Microphone access was denied.',

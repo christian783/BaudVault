@@ -307,17 +307,17 @@ The seeded PRNG is used only for the simulation. It is never used for security v
 
 ### Deck_UI (`src/ui`)
 
-- **Screens.** One screen with three panels: *Record* (secret, Password, mode, sharding, Lock), *Deck* (tapes, Play, Download, Import, Listen, Virtual Tape sliders), and *Readout* (oscilloscope, energy bars, LOCK lamp, telemetry, unlock result).
+- **Screens.** One screen with three panels: *Record* (secret, Lock Password, mode, sharding, Lock), *Deck* (tapes, Play, Download, Import, Listen, Virtual Tape sliders), and *Readout* (oscilloscope, energy bars, LOCK lamp, telemetry, the Vault section with the Unlock password field, unlock result).
 - **Oscilloscope.** A `<canvas>` redrawn from `requestAnimationFrame`. Each frame draws a translucent black rectangle over the previous frame to imitate phosphor persistence, then draws trace A (last 20 ms of samples) and trace B (last 20 ms of `d[n]`) in green (#33FF66).
 - **Shard collection.** Decoded Shards are kept in memory and grouped by set ID. The unlock prompt appears once K Shards of one set are present.
-- **Clear.** Zero all Plaintext `Uint8Array`s with `fill(0)` and drop references to Envelopes, Shards, and the Password. JavaScript strings cannot be wiped, so the secret stays in a `Uint8Array` until it is displayed.
+- **Clear.** Zero all Plaintext `Uint8Array`s with `fill(0)` and drop references to Envelopes, Shards, the Lock Password, and the Unlock password. JavaScript strings cannot be wiped, so the secret stays in a `Uint8Array` until it is displayed.
 
 #### Controls
 
 | Control | Panel | Requirement |
 |---|---|---|
 | Secret text input | Record | 7.1 |
-| Password input (masked, `type="password"`) | Record | 7.1 |
+| Lock Password input (masked, `type="password"`) | Record | 7.1 |
 | Mode choice: Standard_Mode or Turbo_Mode | Record | 7.14 |
 | Sharding choice: none, 2-of-3, or 3-of-5 | Record | 7.15 |
 | Lock button: seal, split if sharding is chosen, show one tape per Body | Record | 7.16 |
@@ -328,17 +328,27 @@ The seeded PRNG is used only for the simulation. It is never used for security v
 | Stop button: stops microphone capture and releases the microphone by stopping every `MediaStreamTrack` | Deck | 7.21 |
 | Virtual_Tape_Channel on/off switch | Deck | 7.22 |
 | Hiss slider (0% to 60%) and Wow-and-Flutter slider (0% to 5%) | Deck | 6.1 |
-| Unlock button: opens the held Envelope with the entered Password | Readout | 7.23 |
+| Unlock password input (masked, `type="password"`, label "Unlock password"; shown only while an Envelope is held) | Readout, Vault section | 7.29 |
+| Unlock button: opens the held Envelope with the entered Unlock password | Readout, Vault section | 7.23 |
 | Reveal button for the masked recovered secret | Readout | 7.12 |
 | Clear button | Readout | 7.13 |
 
-#### Password warning (Requirements 7.25, 7.26)
+#### Lock Password warning (Requirements 7.25, 7.26)
 
-- The UI counts code points with `[...password.normalize('NFC')].length`.
+- The warning applies only to the Lock Password in the Record panel. The Unlock password field never shows it.
+- The UI counts code points of the Lock Password with `[...password.normalize('NFC')].length`.
 - Under 12 code points, it shows: "A short password can be guessed offline by anyone who records the tape."
-- The UI never disables Lock because of Password length. An empty Password still disables Lock, because the Vault_Engine rejects it with `InputError`.
+- The UI never disables Lock because of Lock Password length. An empty Lock Password still disables Lock, because the Vault_Engine rejects it with `InputError`.
 - This rule lives in the UI only. The Vault_Engine accepts any non-empty Password without U+0000.
-- A Password containing U+0000 (possible only by pasting) disables Lock and Unlock and shows the `InputError` message, because the Vault_Engine rejects it (Requirements 1.5, 1.9).
+- A Lock Password containing U+0000 (possible only by pasting) disables Lock, and an Unlock password containing U+0000 disables Unlock through the unlock readiness rule. Each shows the `InputError` message, because the Vault_Engine rejects it (Requirements 1.5, 1.9).
+
+#### Unlock password field (Requirements 7.23, 7.24, 7.29)
+
+- The Unlock password is separate state from the Lock Password. Unlock always opens the Envelope with it, and Lock never reads it. The Record panel carries no hint about Unlock.
+- The field is a labelled `<input type="password">` ("Unlock password") with autocomplete and spellcheck off, in the Vault section. It is shown while an Envelope is held, whether it came from an imported WAV, a microphone capture, a tape played in the Deck, or K Shards, and hidden while no Envelope is held.
+- It starts empty and is never prefilled from the Lock Password.
+- Its value is kept when a newer Envelope replaces the held one. Clear and an `AuthenticationError` empty it.
+- Pressing Enter in the field triggers Unlock when Unlock is ready. The UI does not move focus when the field appears, because the user may be listening to the microphone. The "Ready to unlock" text already announces the state.
 
 #### Busy state (Requirement 7.27)
 
@@ -350,7 +360,7 @@ Seal and open each take about 310 to 330 ms in Node at 600,000 iterations, and l
 
 | `code` | Message |
 |---|---|
-| `AUTH` | "Wrong password or damaged tape"; the Password field is cleared and the Envelope is kept (7.24) |
+| `AUTH` | "Wrong password or damaged tape"; the Unlock password field is cleared and the Envelope is kept (7.24) |
 | `FORMAT` | "Unreadable file or tape format" plus the property named in the error |
 | `UNCORRECTABLE` | "Too much damage to repair" plus the failed block indices |
 | `INTEGRITY` | "Integrity check failed after repair" |
@@ -367,7 +377,7 @@ Seal and open each take about 310 to 330 ms in Node at 600,000 iterations, and l
 - The focus ring has a contrast ratio of at least 3:1 against adjacent colors.
 - Every control has an accessible name from a visible `<label>` or `aria-label`.
 - Phosphor green #33FF66 on black meets 4.5:1 for text. Any dimmer green used for text must be checked against 4.5:1 before use.
-- One polite `aria-live` region announces lock gained and lost, decode results, errors, and unlock. It never contains the secret or the Password.
+- One polite `aria-live` region announces lock gained and lost, decode results, errors, and unlock. It never contains the secret, the Lock Password, or the Unlock password.
 - The oscilloscope canvas is `aria-hidden`. Its information (LOCK state, decode progress, corrected bytes) also appears as text. The LOCK lamp has a text label so state is never shown by color alone.
 - While the recovered secret is masked, its DOM text and accessible name contain only the mask.
 
@@ -492,8 +502,8 @@ sequenceDiagram
   participant S as Shard_Codec
   participant F as Tape_Framer
   participant M as Modulator
-  U->>UI: secret, Password, mode, sharding, Lock
-  UI->>V: seal(utf8(secret), Password)
+  U->>UI: secret, Lock Password, mode, sharding, Lock
+  UI->>V: seal(utf8(secret), Lock Password)
   V-->>UI: Envelope
   opt sharding K-of-N
     UI->>S: split(Envelope, K, N)
@@ -523,7 +533,7 @@ sequenceDiagram
     UI->>S: combine(Shards)
     S-->>UI: Envelope
   end
-  UI->>V: open(Envelope, Password)
+  UI->>V: open(Envelope, Unlock password)
   V-->>UI: Plaintext or AuthenticationError
 ```
 
@@ -583,13 +593,13 @@ Each property is implemented as one fast-check suite in `src/properties/` with 2
 
 | Situation | Behavior |
 |---|---|
-| Wrong Password or tampered tape | `AuthenticationError`; UI shows "Wrong password or damaged tape", clears the Password field, and keeps the Envelope so the user can retry |
+| Wrong Password or tampered tape | `AuthenticationError`; UI shows "Wrong password or damaged tape", clears the Unlock password field, and keeps the Envelope so the user can retry |
 | Version byte or iteration count invalid | `FormatError` before any key derivation |
 | Decompressed output over 15,360 bytes | Stop reading, `FormatError` |
 | Decrypted bytes are not a valid Deflate stream (after authentication) | `FormatError`, no Plaintext returned (Requirement 1.8) |
 | Plaintext empty or over 15,360 bytes, empty Password | `InputError`; UI shows the size limit and disables Lock |
 | Password contains U+0000, in seal or open | `InputError` before any key derivation; in open, only after the Envelope format checks pass (Requirements 1.5, 1.9) |
-| Password shorter than 12 code points after NFC | Warning only; Lock stays enabled (Requirements 7.25, 7.26) |
+| Lock Password shorter than 12 code points after NFC | Warning on the Lock Password only; Lock stays enabled (Requirements 7.25, 7.26) |
 | Codeword with more than 16 errors | `UncorrectableError` with block indices; UI shows which blocks failed and suggests replaying with less noise |
 | Both Header_Frame copies unusable | Decoder silently returns to carrier search; UI LOCK lamp turns off |
 | Signal lost mid-record | `error` event with partial stats (bytes received, corrected bytes); no Body; decoder returns to carrier search (Requirement 5.9) |

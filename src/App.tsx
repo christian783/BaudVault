@@ -6,11 +6,15 @@
 // one. At Lock it is encoded into a Uint8Array, sealed, and that array is
 // zeroed. The recovered Plaintext stays a Uint8Array until Reveal, and Clear
 // zeroes it (Requirement 7.13). JavaScript strings cannot be wiped, so Clear
-// can only drop the secret and Password strings. Nothing here writes the
-// secret, the Password, or decrypted bytes to the console, storage, or the
-// URL (Requirement 8.4).
+// can only drop the secret, Lock Password, and Unlock password strings.
+//
+// The Lock Password (`passwords.lock`, Record panel) is read only by Lock.
+// The Unlock password (`passwords.unlock`, Vault section) is a separate field,
+// read only by Unlock, and never prefilled from the Lock Password
+// (Requirements 7.23, 7.29). `passwordsReducer` owns both fields. Nothing here writes the secret, either Password, or decrypted
+// bytes to the console, storage, or the URL (Requirement 8.4).
 
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useReducer, useRef, useState } from 'react'
 import { open } from './crypto/vault'
 import { announce, type AppEvent, EMPTY_ANNOUNCEMENTS, freshNotices } from './ui/announcements'
 import { DEFAULT_CHANNEL, newChannelSeed, toChannelSettings, type ChannelControls } from './ui/channel-controls'
@@ -20,6 +24,7 @@ import { detectFeatures, readFeatureEnvironment } from './ui/features'
 import { errorText } from './ui/messages'
 import { ReadoutPanel } from './ui/ReadoutPanel'
 import { RecordPanel } from './ui/RecordPanel'
+import { EMPTY_PASSWORDS, passwordsReducer } from './ui/passwords'
 import { lockReadiness } from './ui/record-rules'
 import { lockSecret, type Mode, type Sharding, type Tape } from './ui/tapes'
 import { unlockFailure, unlockReadiness, wipePlaintext } from './ui/unlock'
@@ -28,7 +33,10 @@ import { useTapeDeck } from './ui/use-tape-deck'
 
 function App() {
   const [secret, setSecret] = useState('')
-  const [password, setPassword] = useState('')
+  /** The Lock Password, used only by Lock, and the Unlock password, used only by Unlock (Requirement 7.29). */
+  const [passwords, dispatchPasswords] = useReducer(passwordsReducer, EMPTY_PASSWORDS)
+  const password = passwords.lock
+  const unlockPassword = passwords.unlock
   const [mode, setMode] = useState<Mode>('standard')
   const [sharding, setSharding] = useState<Sharding>('none')
   const [sealing, setSealing] = useState(false)
@@ -66,7 +74,7 @@ function App() {
 
   const busy = sealing || opening
   const held = deck.receiver.collection.held
-  const unlock = unlockReadiness(held !== null, password, busy, features.unlockProblem)
+  const unlock = unlockReadiness(held !== null, unlockPassword, busy, features.unlockProblem)
 
   const showRecovered = (plaintext: Uint8Array | null) => {
     wipePlaintext(recoveredRef.current)
@@ -105,7 +113,7 @@ function App() {
     setOpening(true)
     setUnlockError(null)
     try {
-      const plaintext = await open(held.envelope, password)
+      const plaintext = await open(held.envelope, unlockPassword)
       if (started !== generation.current) {
         wipePlaintext(plaintext)
         return
@@ -115,9 +123,10 @@ function App() {
       say({ type: 'unlocked' })
     } catch (error) {
       if (started !== generation.current) return
-      // The held Envelope stays, so another Password can be tried (Requirement 7.24).
+      // The held Envelope stays, so another Unlock password can be tried, and
+      // only the Unlock password field is emptied (Requirement 7.24).
       const failure = unlockFailure(error)
-      if (failure.clearPassword) setPassword('')
+      dispatchPasswords({ type: 'unlock-failed', failure })
       setUnlockError(failure.message)
       say({ type: 'unlock-failed', error })
     } finally {
@@ -129,7 +138,7 @@ function App() {
     generation.current++
     showRecovered(null)
     setSecret('')
-    setPassword('')
+    dispatchPasswords({ type: 'cleared' })
     setTapes([])
     setLockError(null)
     setUnlockError(null)
@@ -149,7 +158,7 @@ function App() {
           secret={secret}
           onSecretChange={setSecret}
           password={password}
-          onPasswordChange={setPassword}
+          onPasswordChange={(value) => dispatchPasswords({ type: 'lock-changed', password: value })}
           mode={mode}
           onModeChange={setMode}
           sharding={sharding}
@@ -187,6 +196,8 @@ function App() {
           <UnlockSection
             receiver={deck.receiver}
             readiness={unlock}
+            unlockPassword={unlockPassword}
+            onUnlockPasswordChange={(value) => dispatchPasswords({ type: 'unlock-changed', password: value })}
             busy={busy}
             opening={opening}
             onUnlock={() => void handleUnlock()}
@@ -201,7 +212,7 @@ function App() {
       {/* The single polite live region (Requirements 9.4, 9.5). Each entry is
           a new node, so repeats and same-frame results are all announced.
           Its text is built by announcementText, which never sees the
-          Plaintext or the Password (Requirement 9.7). Visually hidden: every
+          Plaintext or either Password (Requirement 9.7). Visually hidden: every
           entry repeats text the panels already show. */}
       <div role="log" aria-live="polite" aria-label="Announcements" className="sr-only">
         {announcements.entries.map((entry) => (

@@ -1,12 +1,19 @@
 // The Readout panel's vault controls: received tapes, Shard progress, Unlock,
 // the masked recovered secret with Reveal, and Clear (design.md, "Deck_UI";
-// Requirements 7.9, 7.12, 7.13, 7.23, 7.24, 7.27, 7.28).
+// Requirements 7.9, 7.12, 7.13, 7.23, 7.24, 7.27, 7.28, 7.29).
 //
-// Unlock uses the Password entered in the Record panel, the only Password
-// field. While the secret is masked, the DOM holds only SECRET_MASK, so
-// assistive technology sees only the mask (Requirement 9.8). The Plaintext is
-// decoded to text only while revealed, and only into the DOM: nothing here
-// logs or stores it.
+// Unlock opens the held Envelope with the Unlock password typed here, never
+// with the Lock Password from the Record panel. The Unlock password field is
+// shown only while an Envelope is held, starts empty, and does not take
+// focus when it appears. It is `type="password"` with autocomplete and spell
+// checking off, and has no short-password warning (design.md, "Unlock
+// password field"). Enter in the field submits the form, which unlocks only
+// when Unlock is ready.
+//
+// While the secret is masked, the DOM holds only SECRET_MASK, so assistive
+// technology sees only the mask (Requirement 9.8). The Plaintext is decoded
+// to text only while revealed, and only into the DOM: nothing here logs or
+// stores it or either Password.
 
 import { useId } from 'react'
 import type { ReceiverState } from './receiver'
@@ -16,6 +23,9 @@ import { revealText, SECRET_MASK, type UnlockReadiness } from './unlock'
 export type UnlockSectionProps = {
   receiver: ReceiverState
   readiness: UnlockReadiness
+  /** The Unlock password, separate from the Lock Password (Requirement 7.29). */
+  unlockPassword: string
+  onUnlockPasswordChange: (password: string) => void
   /** A seal or open is running (Requirement 7.27). */
   busy: boolean
   /** An open is running. */
@@ -32,10 +42,16 @@ export type UnlockSectionProps = {
 
 export function UnlockSection(props: UnlockSectionProps) {
   const id = useId()
-  const ids = { title: `${id}-title`, secret: `${id}-secret`, problem: `${id}-problem` }
+  const ids = {
+    title: `${id}-title`,
+    secret: `${id}-secret`,
+    problem: `${id}-problem`,
+    password: `${id}-unlock-password`,
+  }
   const { receiver, readiness } = props
   const held = receiver.collection.held
   const pending = pendingShardSets(receiver.collection)
+  const problemId = readiness.problem !== null ? ids.problem : undefined
 
   return (
     <section aria-labelledby={ids.title} className="flex flex-col gap-3">
@@ -74,22 +90,39 @@ export function UnlockSection(props: UnlockSectionProps) {
         </p>
       )}
 
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          className="button"
-          onClick={props.onUnlock}
-          disabled={!readiness.ready}
-          aria-describedby={readiness.problem !== null ? ids.problem : undefined}
-        >
-          {props.opening ? 'Unlocking…' : 'Unlock'}
-        </button>
-        <button type="button" className="button" onClick={props.onClear}>
-          Clear
-        </button>
-        {props.busy && <span className="busy">Busy: deriving the key…</span>}
-      </div>
-      {held !== null && <p className="hint">Unlock uses the password entered in the Record panel.</p>}
+      <form
+        className="flex flex-col gap-3"
+        onSubmit={(event) => {
+          event.preventDefault()
+          if (readiness.ready) props.onUnlock()
+        }}
+      >
+        {held !== null && (
+          <div className="field">
+            <label htmlFor={ids.password}>Unlock password</label>
+            <input
+              id={ids.password}
+              className="control"
+              type="password"
+              value={props.unlockPassword}
+              onChange={(event) => props.onUnlockPasswordChange(event.currentTarget.value)}
+              autoComplete="off"
+              spellCheck={false}
+              aria-describedby={problemId}
+            />
+          </div>
+        )}
+
+        <div className="flex flex-wrap items-center gap-3">
+          <button type="submit" className="button" disabled={!readiness.ready} aria-describedby={problemId}>
+            {props.opening ? 'Unlocking…' : 'Unlock'}
+          </button>
+          <button type="button" className="button" onClick={props.onClear}>
+            Clear
+          </button>
+          {props.busy && <span className="busy">Busy: deriving the key…</span>}
+        </div>
+      </form>
 
       {props.unlockError !== null && <p className="warning">{props.unlockError}</p>}
 
