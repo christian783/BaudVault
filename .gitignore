@@ -13,7 +13,6 @@ dist-ssr
 *.local
 
 # Editor directories and files
-.vscode/*
 !.vscode/extensions.json
 .idea
 .DS_Store
@@ -27,3 +26,4 @@ dist-ssr
 # Do not add any pattern above or below that ignores this folder.
 !.kiro/
 !.kiro/**
+config.bat
