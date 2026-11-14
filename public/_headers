@@ -1,0 +1,16 @@
+# Netlify response headers for BaudVault.
+#
+# The strict CSP is set only on the HTML paths. Do not add a /* rule that sets
+# Content-Security-Policy: Netlify merges headers from every matching rule, and
+# a browser enforces every CSP header it receives, so a second policy on the
+# service worker script would block precaching.
+
+/
+  Content-Security-Policy: default-src 'self'; connect-src 'none'; img-src 'self' blob: data:; media-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'
+
+/index.html
+  Content-Security-Policy: default-src 'self'; connect-src 'none'; img-src 'self' blob: data:; media-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'
+
+/sw.js
+  Content-Security-Policy: default-src 'self'
+  Cache-Control: no-cache

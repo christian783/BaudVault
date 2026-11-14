@@ -143,19 +143,19 @@ The plan follows the four waves in `tickets&specs.md`. Each top-level task is on
     - **Validates: Requirements 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.7, 6.3, 6.5**
   - [x] 9.4 Run `npm test` and optimize until it finishes in under 15 seconds with zero counterexamples
 
-- [ ] 10. Checkpoint: all tests pass, build has zero warnings, `npm run airgap` and `npm run airgap:dist` pass
+- [x] 10. Checkpoint: all tests pass, build has zero warnings, `npm run airgap` and `npm run airgap:dist` pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 11. BV-11 Netlify configuration and offline service worker
+- [x] 11. BV-11 Netlify configuration and offline service worker
   - _Wave 4, depends on 8, 9, 10_
-  - [ ] 11.1 Add `netlify.toml` and `public/_headers`
+  - [x] 11.1 Add `netlify.toml` and `public/_headers`
     - `netlify.toml`: build command `npm run build`, publish directory `dist`
     - `public/_headers`: the per-path CSP from `design.md`, with no `/*` CSP rule
     - _Requirements: 8.2, 8.6_
-  - [ ] 11.2 Add the offline service worker through the build plugin
+  - [x] 11.2 Add the offline service worker through the build plugin
     - Precache only same-origin files, and exclude the service worker from the `--dist` scan
     - _Requirements: 8.3, 8.7, 8.8_
-  - [ ] 11.3 Write a test for `public/_headers`
+  - [x] 11.3 Write a test for `public/_headers`
     - Assert `connect-src 'none'` on `/` and `/index.html`, `default-src 'self'` on the service worker path, and no `/*` CSP rule
     - _Requirements: 8.6, 8.8_
 

@@ -1,10 +1,12 @@
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vitest/config'
+import { offlineServiceWorker } from './scripts/sw-plugin.ts'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  // offlineServiceWorker emits dist/sw.js for offline use (Requirements 8.3, 8.8).
+  plugins: [react(), tailwindcss(), offlineServiceWorker()],
   build: {
     // The modulepreload polyfill adds a network request to the bundle. Every
     // supported browser preloads modules natively (Requirement 8.7).

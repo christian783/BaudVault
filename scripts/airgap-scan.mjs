@@ -16,20 +16,15 @@ import { DIST_MATCHERS, SOURCE_MATCHERS, findMatches } from './airgap-words.mjs'
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
 /**
- * Service worker scripts skipped by the --dist scan, matched against file
- * names at the top level of the dist directory. The service worker fetches
- * same-origin precached files by design (Requirement 8.8). Update this list if
- * the build plugin (task 11.2) emits a different name.
+ * The offline service worker emitted by scripts/sw-plugin.ts, relative to the
+ * dist directory. It is the only file the --dist scan skips, because it
+ * fetches same-origin precached files by design (Requirement 8.8). Keep this
+ * in step with SERVICE_WORKER_FILE in scripts/sw-plugin.ts.
  */
-export const SERVICE_WORKER_FILES = Object.freeze([
-  /^sw\.js$/,
-  /^service-worker\.js$/,
-  /^workbox-[\w-]+\.js$/,
-])
+export const SERVICE_WORKER_FILE = 'sw.js'
 
 export function isServiceWorkerFile(relativePath) {
-  if (relativePath.includes('/')) return false
-  return SERVICE_WORKER_FILES.some((pattern) => pattern.test(relativePath))
+  return relativePath === SERVICE_WORKER_FILE
 }
 
 /** Lists every file under `dir` as a sorted, forward-slash relative path. */

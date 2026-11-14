@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { isServiceWorkerFile, main, scanDist, scanSource } from '../scripts/airgap-scan.mjs'
+import { SERVICE_WORKER_FILE, isServiceWorkerFile, main, scanDist, scanSource } from '../scripts/airgap-scan.mjs'
 import { FORBIDDEN_WORDS } from '../scripts/airgap-words.mjs'
 
 const SCRIPT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../scripts/airgap-scan.mjs')
@@ -142,22 +142,28 @@ describe('dist mode', () => {
     expect(run(['--dist', 'dist']).code).toBe(0)
   })
 
-  it('skips the service worker at the top level only', () => {
-    put('dist/sw.js', 'self.addEventListener("fetch", e => e.respondWith(fetch(e.request)))\n')
-    put('dist/service-worker.js', 'fetch(x)\n')
-    put('dist/workbox-abc123.js', 'fetch(x)\n')
+  it('skips dist/sw.js while another file with the same content still fails', () => {
+    const worker = 'self.addEventListener("fetch", e => e.respondWith(fetch(e.request)))\n'
+    put('dist/sw.js', worker)
     expect(run(['--dist', 'dist']).code).toBe(0)
 
-    put('dist/assets/sw.js', 'fetch(x)\n')
+    put('dist/assets/index.js', worker)
+    put('dist/assets/sw.js', worker)
+    put('dist/service-worker.js', worker)
     const { code, out } = run(['--dist', 'dist'])
     expect(code).toBe(1)
-    expect(out).toContain('dist/assets/sw.js:1: fetch')
+    expect(out).toEqual([
+      'dist/assets/index.js:1: fetch',
+      'dist/assets/sw.js:1: fetch',
+      'dist/service-worker.js:1: fetch',
+    ])
   })
 
-  it('isServiceWorkerFile matches only top-level service worker names', () => {
+  it('isServiceWorkerFile matches only the top-level sw.js', () => {
+    expect(SERVICE_WORKER_FILE).toBe('sw.js')
     expect(isServiceWorkerFile('sw.js')).toBe(true)
-    expect(isServiceWorkerFile('service-worker.js')).toBe(true)
-    expect(isServiceWorkerFile('workbox-1a2b.js')).toBe(true)
+    expect(isServiceWorkerFile('service-worker.js')).toBe(false)
+    expect(isServiceWorkerFile('workbox-1a2b.js')).toBe(false)
     expect(isServiceWorkerFile('assets/sw.js')).toBe(false)
     expect(isServiceWorkerFile('sw.js.map')).toBe(false)
     expect(isServiceWorkerFile('index.js')).toBe(false)

@@ -556,6 +556,61 @@
         "chatSessionId": "sess_352b7882-2695-4a82-8d58-8b0ac4fea948",
         "timestamp": 1794645122894
       }
+    ],
+    "10. Checkpoint: all tests pass, build has zero warnings, `npm run airgap` and `npm run airgap:dist` pass": [
+      {
+        "executionId": "b2ea4c0e-c7d5-4a13-be8b-ed1fb868e05a",
+        "chatSessionId": "sess_6e03b5ae-9d1e-445f-a1da-6057872ff81c",
+        "timestamp": 1794646979169
+      },
+      {
+        "executionId": "b2ea4c0e-c7d5-4a13-be8b-ed1fb868e05a",
+        "chatSessionId": "sess_6e03b5ae-9d1e-445f-a1da-6057872ff81c",
+        "timestamp": 1794647269515
+      }
+    ],
+    "11.1 Add `netlify.toml` and `public/_headers`": [
+      {
+        "executionId": "3dfb922d-ab5b-485c-935a-ff8b004950fa",
+        "chatSessionId": "sess_43118372-2a58-47ba-9172-1904c170f238",
+        "timestamp": 1794647567904
+      },
+      {
+        "executionId": "3dfb922d-ab5b-485c-935a-ff8b004950fa",
+        "chatSessionId": "sess_43118372-2a58-47ba-9172-1904c170f238",
+        "timestamp": 1794649219202
+      }
+    ],
+    "11.2 Add the offline service worker through the build plugin": [
+      {
+        "executionId": "3dfb922d-ab5b-485c-935a-ff8b004950fa",
+        "chatSessionId": "sess_43118372-2a58-47ba-9172-1904c170f238",
+        "timestamp": 1794647568985
+      },
+      {
+        "executionId": "3dfb922d-ab5b-485c-935a-ff8b004950fa",
+        "chatSessionId": "sess_43118372-2a58-47ba-9172-1904c170f238",
+        "timestamp": 1794649219393
+      }
+    ],
+    "11.3 Write a test for `public/_headers`": [
+      {
+        "executionId": "3dfb922d-ab5b-485c-935a-ff8b004950fa",
+        "chatSessionId": "sess_43118372-2a58-47ba-9172-1904c170f238",
+        "timestamp": 1794649224366
+      },
+      {
+        "executionId": "3dfb922d-ab5b-485c-935a-ff8b004950fa",
+        "chatSessionId": "sess_43118372-2a58-47ba-9172-1904c170f238",
+        "timestamp": 1794649726860
+      }
+    ],
+    "11. BV-11 Netlify configuration and offline service worker": [
+      {
+        "executionId": "3dfb922d-ab5b-485c-935a-ff8b004950fa",
+        "chatSessionId": "sess_43118372-2a58-47ba-9172-1904c170f238",
+        "timestamp": 1794649726965
+      }
     ]
   }
 }
