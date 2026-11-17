@@ -12,7 +12,13 @@ dist
 dist-ssr
 *.local
 
+# Secrets stay off the remote. The vault does not read an env file.
+.env
+.env.*
+!.env.example
+
 # Editor directories and files
+.vscode/*
 !.vscode/extensions.json
 .idea
 .DS_Store
@@ -26,4 +32,3 @@ dist-ssr
 # Do not add any pattern above or below that ignores this folder.
 !.kiro/
 !.kiro/**
-config.bat
